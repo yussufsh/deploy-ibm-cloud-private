@@ -1,0 +1,12 @@
+network_type: calico
+network_cidr: 192.168.0.0/16
+service_cluster_ip_range: 192.168.0.0/24
+ingress_enabled: true
+ansible_user: root
+
+mesos_enabled: false
+install_docker_py: true
+
+sl_datacenter: dal09
+sl_ssh_key: 
+sl_vlan: 

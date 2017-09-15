@@ -1,0 +1,45 @@
+---
+- name: ensure connectivity to all nodes
+  hosts: all
+  gather_facts: false
+  pre_tasks:
+    - name: check if python is installed
+      raw: test -e /usr/bin/python
+      register: python_installed
+      changed_when: false
+      failed_when: false
+    - name: install python
+      raw: (yum install -y python)
+      when: python_installed.rc != 0
+  tasks:
+    - name: ansible setup
+      action: setup
+      tags: ['ping']
+    - name: install yum-utils
+      yum: name=yum-utils
+    - name: get Docker CE repo
+      shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+    - name: install Docker CE
+      yum: name=docker-ce   state=present
+
+    - name: remove /etc/hosts
+      file:
+        dest: /etc/hosts
+        state: absent
+
+    - name: add localhost to /etc/hosts
+      lineinfile:
+        create: yes
+        line: 127.0.0.1 localhost
+        path: /etc/hosts
+
+    - name: add host to /etc/hosts
+      lineinfile:
+        line: "{{ hostvars[item]['primaryBackendIpAddress'] }} {{ hostvars[item]['hostname'] }}"
+        path: /etc/hosts
+      with_items: "{{ groups['all'] }}"
+
+  any_errors_fatal: true
+  max_fail_percentage: 0

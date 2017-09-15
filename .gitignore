@@ -1,0 +1,6 @@
+*.retry
+cfc*
+.vagrant
+
+cluster/ssh_key
+cluster/ssh_key.pub
