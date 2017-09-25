@@ -9,4 +9,14 @@ install_docker_py: true
 
 sl_datacenter: dal09
 sl_ssh_key: 
-sl_vlan: 
+sl_vlan:
+
+sl_icp_masters:
+  - icp-master01
+
+sl_icp_workers:
+  - icp-worker01
+  - icp-worker02
+
+sl_icp_proxies:
+  - icp-proxy01  

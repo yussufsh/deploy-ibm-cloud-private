@@ -19,7 +19,7 @@ install_docker_py: true
 '
 
 # Please update if you want to use a specified version
-cfc_version = 'latest'
+cfc_version = '2.1.0-beta-2'
 
 cfc_hosts = "[master]\n#{nodes.last[:ip]}\n[proxy]\n#{nodes.last[:ip]}\n[worker]\n"
 vagrant_hosts = "127.0.0.1 localhost\n"
@@ -74,7 +74,7 @@ Vagrant.configure(2) do |config|
           echo "#{rsa_private_key}" > cluster/ssh_key
           echo "#{cfc_hosts}" > cluster/hosts
           echo "#{cfc_config}" > cluster/config.yaml
-          docker run -e LICENSE=accept -v "$(pwd)/cluster":/installer/cluster ibmcom/cfc-installer:"#{cfc_version}" install
+          docker run -e LICENSE=accept -v "$(pwd)/cluster":/installer/cluster ibmcom/icp-inception:"#{cfc_version}" install
         SHELL
       end
     end

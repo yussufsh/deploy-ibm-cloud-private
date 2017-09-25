@@ -6,7 +6,7 @@
   tasks:
     - name: Include cluster vars
       include_vars:
-        file: cluster/config.yaml
+        file: ../cluster/config.yaml
     - name: create master
       sl_vm:
         hostname: "{{ item }}"
@@ -24,8 +24,7 @@
         private_vlan: "{{ sl_vlan|default(omit) }}"
         wait: no
         ssh_keys: "{{ sl_ssh_key|default(omit) }}"
-      with_items:
-        - icp-master01
+      with_items: " {{ sl_icp_masters }}"
 
     - name: create workers
       sl_vm:
@@ -44,6 +43,23 @@
         private_vlan: "{{ sl_vlan|default(omit) }}"
         wait: no
         ssh_keys: "{{ sl_ssh_key|default(omit) }}"
-      with_items:
-        - icp-worker01
-        - icp-worker02
+      with_items: " {{ sl_icp_workers }}"
+
+    - name: create proxies
+      sl_vm:
+        hostname: "{{ item }}"
+        domain: example.com
+        datacenter: "{{ sl_datacenter|default('dal09') }}"
+        tags: "{{ item }},icp,proxy"
+        hourly: True
+        private: False
+        dedicated: False
+        local_disk: True
+        cpus: 2
+        memory: 4096
+        disks: [100]
+        os_code: CENTOS_LATEST
+        private_vlan: "{{ sl_vlan|default(omit) }}"
+        wait: no
+        ssh_keys: "{{ sl_ssh_key|default(omit) }}"
+      with_items: " {{ sl_icp_proxies }}"

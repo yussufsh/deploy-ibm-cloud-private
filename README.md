@@ -1,4 +1,4 @@
-# Deploy IBM Cloud Private on Softlayer
+# Deploy IBM Cloud Private beta on Softlayer
 
 ## Deploy using Vagrant:
 
@@ -42,8 +42,8 @@ Create a SSH key to use:
 $ ssh-keygen -f cluster/ssh_key -P ""
 Generating public/private rsa key pair.
 Overwrite (y/n)? y
-Your identification has been saved in /home/XXXX/.ssh/cuttle-demo.
-Your public key has been saved in /home/XXXX/.ssh/cuttle-demo.pub.
+Your identification has been saved in cluster/ssh_key
+Your public key has been saved in cluster/ssh_key.pub
 $ slcli sshkey add -f cluster/ssh_key.pub icp-key
 $ slcli sshkey list               
 :........:....................:.................................................:.......:
@@ -102,7 +102,7 @@ While the above systems are being created we can slipstream the softlayer python
 the IBM Cloud Private deployer so that we can use the [Softlayer Dynamic Inventory](cluster/hosts):
 
 ```bash
-$ docker build -t ibmcom/cfc-installer:1.1.0-sl .
+$ docker build -t icp-on-sl .
 Sending build context to Docker daemon  120.3kB
 Step 1/2 : FROM ibmcom/cfc-installer:1.1.0
  ---> 91bc38bcb3a8
@@ -110,7 +110,7 @@ Step 2/2 : RUN apt-get update &&     apt-get install -y python-pip &&     pip in
  ---> Using cache
  ---> 20dd79bda317
 Successfully built 20dd79bda317
-Successfully tagged ibmcom/cfc-installer:1.1.0-sl
+Successfully tagged icp-on-sl
 ```
 
 Once the systems are online you should be able to prepare them for the ICP install using the following
@@ -142,7 +142,8 @@ $ cat ~/.softlayer
 [softlayer]
 username = XXXXX
 api_key = YYYY
-$ docker run -e SL_USERNAME=XXXXX -e SL_API_KEY=YYYY -e LICENSE=accept --net=host --rm -t -v "$(pwd)/cluster":/installer/cluster ibmcom/cfc-installer:1.1.0-sl install
+$ docker run -e SL_USERNAME=XXXXX -e SL_API_KEY=YYYY -e LICENSE=accept --net=host \
+   --rm -t -v "$(pwd)/cluster":/installer/cluster icp-on-sl install
 ...
 ...
 PLAY RECAP *********************************************************************

@@ -1,0 +1,72 @@
+---
+- name: ensure connectivity to all nodes
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Include cluster vars
+      include_vars:
+        file: ../cluster/config.yaml
+    - name: ansible setup
+      action: setup
+      tags: ['ping']
+    - name: install extra packages
+      yum: 
+        name: "{{ item }}"
+      with_items: [dnsmasq,vim, yum-utils]
+
+    - name: add alternative dnsmasq resolv.conf
+      lineinfile:
+        line: "resolv-file=/etc/dnsmasq_resolv.conf"
+        path: /etc/dnsmasq.conf
+
+    - name: add dns servers to /etc/dnsmasq_resolv.conf
+      lineinfile:
+        create: yes
+        line: "nameserver {{ item }}"
+        path: /etc/dnsmasq_resolv.conf
+      with_items: [10.0.80.11, 10.0.80.12]
+
+    - name: rewrite /etc/resolv.conf
+      copy:
+        dest: /etc/resolv.conf
+        content: "nameserver {{ primaryBackendIpAddress }}"
+
+    - name: enable / start dnsmasq
+      service:
+        name: dnsmasq
+        state: started
+        enabled: true
+
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
+
+    - name: remove /etc/hosts
+      file:
+        dest: /etc/hosts
+        state: absent
+
+    - name: add localhost to /etc/hosts
+      lineinfile:
+        create: yes
+        line: 127.0.0.1 localhost
+        path: /etc/hosts
+
+    - name: add host to /etc/hosts
+      lineinfile:
+        line: "{{ hostvars[item]['primaryBackendIpAddress'] }} {{ hostvars[item]['hostname'] }} {{ hostvars[item]['ansible_fqdn'] }}"
+        path: /etc/hosts
+      with_items: "{{ groups['all'] }}"
+
+    - name: get Docker CE repo
+      shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: install Docker CE
+      yum: 
+        name: docker-ce
+
+  any_errors_fatal: true
+  max_fail_percentage: 0
