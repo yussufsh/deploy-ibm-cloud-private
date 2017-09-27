@@ -1,8 +1,70 @@
-# Deploy IBM Cloud Private beta on Softlayer
+# Deploy IBM Cloud Private beta
 
 ## Deploy using Vagrant:
 
-TBD
+You will need to download and run the approprate installer of
+[VirtualBox](https://www.virtualbox.org/wiki/Downloads) and
+[Vagrant](https://www.vagrantup.com/downloads.html)
+
+Once installed, clone this repo and use the Vagrantfile to launch your instance
+of IBM Cloud private.
+
+```bash
+$ git clone https://github.com/IBM/deploy-ibm-cloud-private.git
+$ cd deploy-ibm-cloud-private
+```
+
+You may want to edit the Vagrantfile to use more resources that what the file
+currently allocates.  i.e. change `memory => 2048` in the first four lines if
+you have more RAM to spare.  Once you are ready:
+```bash
+$ vagrant up
+```
+The beginning and end of the console output should look something like this:
+```text
+[mwagone@oc4258582282 icp]$ vagrant up
+Bringing machine 'cfc-worker1' up with 'virtualbox' provider...
+Bringing machine 'cfc-worker2' up with 'virtualbox' provider...
+Bringing machine 'cfc-master' up with 'virtualbox' provider...
+==> cfc-worker1: Importing base box 'centos/7'...
+==> cfc-worker1: Matching MAC address for NAT networking...
+==> cfc-worker1: Setting the name of the VM: icp_cfc-worker1_1505490687129_87343
+==> cfc-worker1: Clearing any previously set network interfaces...
+==> cfc-worker1: Preparing network interfaces based on configuration...
+    cfc-worker1: Adapter 1: nat
+    cfc-worker1: Adapter 2: hostonly
+==> cfc-worker1: Forwarding ports...
+    cfc-worker1: 22 (guest) => 2222 (host) (adapter 1)
+==> cfc-worker1: Running 'pre-boot' VM customizations...
+==> cfc-worker1: Booting VM...
+==> cfc-worker1: Waiting for machine to boot. This may take a few minutes...
+    cfc-worker1: SSH address: 127.0.0.1:2222
+    cfc-worker1: SSH username: vagrant
+    cfc-worker1: SSH auth method: private key
+.
+.
+.
+.
+.
+==> cfc-master: PLAY RECAP *********************************************************************
+==> cfc-master: 192.168.123.10             : ok=118  changed=53   unreachable=0    failed=0   
+==> cfc-master: 192.168.123.11             : ok=52   changed=31   unreachable=0    failed=0   
+==> cfc-master: 192.168.123.12             : ok=52   changed=31   unreachable=0    failed=0   
+==> cfc-master: localhost                  : ok=87   changed=37   unreachable=0    failed=0   
+==> cfc-master: 
+==> cfc-master: 
+==> cfc-master: POST DEPLOY MESSAGE ************************************************************
+==> cfc-master: 
+==> cfc-master: UI URL is https://192.168.123.10:8443 , default username/password is admin/admin
+==> cfc-master: Playbook run took 0 days, 0 hours, 23 minutes, 40 seconds
+```
+Use the UI URL in a web browser (after accepting a security exception) and you
+will see the dashboard.  It may take a few minutes for the 'Applications'
+section on the upper right to read that they are healthy.
+
+![dashboard image](../images/dashboard.png)
+
+
 
 ## Deploy on IBM Cloud (softlayer)
 
