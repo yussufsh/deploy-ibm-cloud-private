@@ -2,22 +2,62 @@
 - name: ensure connectivity to all nodes
   hosts: all
   gather_facts: false
+  pre_tasks:
+    - name: Include cluster vars
+      include_vars:
+        file: ../cluster/config.yaml  
+    - name: check if python is installed
+      raw: test -e /usr/bin/python
+      register: python_installed
+      changed_when: false
+      failed_when: false
+    - name: check if debian based OS
+      raw: which apt-get
+      register: is_ubuntu
+      changed_when: false
+      failed_when: false
+    - name: install python
+      raw: (apt-get -y update && apt-get install -y python)
+      when: python_installed.rc != 0 and is_ubuntu.rc == 0
+    - name: install python
+      raw: (yum install -y python)
+      when: python_installed.rc != 0 and is_ubuntu.rc != 0
+  tasks:
+    - name: ansible setup
+      action: setup
+      tags: ['ping']
+  any_errors_fatal: true
+  max_fail_percentage: 0
+
+- name: bootstrap nodes
+  hosts: all
+  gather_facts: true
   tasks:
     - name: Include cluster vars
       include_vars:
         file: ../cluster/config.yaml
-    - name: ansible setup
-      action: setup
-      tags: ['ping']
+
     - name: install extra packages
       yum: 
         name: "{{ item }}"
-      with_items: [dnsmasq,vim, yum-utils]
+      with_items: [dnsmasq,vim, yum-utils,python-pip]
+      when: ansible_os_family == 'RedHat'
+
+    - name: install extra packages
+      apt: 
+        name: "{{ item }}"
+      with_items: [dnsmasq,vim,python-pip]
+      when: ansible_os_family == 'Debian'
+
+    - name: disable resolvconf updates
+      command: resolvconf --disable-updates
+      when: ansible_os_family == 'Debian'
 
     - name: add alternative dnsmasq resolv.conf
       lineinfile:
         line: "resolv-file=/etc/dnsmasq_resolv.conf"
         path: /etc/dnsmasq.conf
+        regexp: "^#resolv-file="
 
     - name: add dns servers to /etc/dnsmasq_resolv.conf
       lineinfile:
@@ -26,21 +66,20 @@
         path: /etc/dnsmasq_resolv.conf
       with_items: [10.0.80.11, 10.0.80.12]
 
-    - name: rewrite /etc/resolv.conf
-      copy:
-        dest: /etc/resolv.conf
-        content: "nameserver {{ primaryBackendIpAddress }}"
+    - name: rewrite /var/run/resolvconf/resolv.conf
+      lineinfile:
+        create: yes
+        line: "nameserver {{ item }}"
+        path: /var/run/resolvconf/resolv.conf
+        regexp: "nameserver {{ item }}"
+        state: absent
+      with_items: [10.0.80.11, 10.0.80.12, 127.0.0.1]
 
-    - name: enable / start dnsmasq
-      service:
-        name: dnsmasq
-        state: started
-        enabled: true
-
-    - name: restart dnsmasq
-      service:
-        name: dnsmasq
-        state: restarted
+    - name: rewrite /var/run/resolvconf/resolv.conf
+      lineinfile:
+        line: "nameserver {{ primaryBackendIpAddress }}"
+        path: /var/run/resolvconf/resolv.conf
+        regexp: "nameserver {{ primaryBackendIpAddress }}"
 
     - name: remove /etc/hosts
       file:
@@ -59,14 +98,75 @@
         path: /etc/hosts
       with_items: "{{ groups['all'] }}"
 
-    - name: get Docker CE repo
-      shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-      args:
-        creates: /etc/yum.repos.d/docker-ce.repo
+    - name: enable / start dnsmasq
+      service:
+        name: dnsmasq
+        state: started
+        enabled: true
 
-    - name: install Docker CE
-      yum: 
-        name: docker-ce
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
+
+    - block:
+      - name: get Docker CE repo
+        shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+        args:
+          creates: /etc/yum.repos.d/docker-ce.repo
+
+      - name: install Docker CE
+        yum: 
+          name: docker-ce
+      when: ansible_os_family == "RedHat"
+
+    - block:
+      - name: Import Docker CE repository gpg key
+        apt_key:
+          url: https://download.docker.com/linux/ubuntu/gpg
+          state: present
+          id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88      
+      - name: Add Docker CE repository
+        apt_repository:
+          repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+          state: present
+
+      - name: Install Docker CE
+        apt:
+          name: docker-ce
+          state: present
+          update_cache: yes
+      when: ansible_os_family == "Debian"
 
   any_errors_fatal: true
   max_fail_percentage: 0
+
+- name: install icp
+  hosts: master[0]
+  gather_facts: true
+  tasks:
+    - name: Include cluster vars
+      include_vars:
+        file: ../cluster/config.yaml
+    
+    - name: create icp install dir
+      file:
+        dest: /root/cluster
+        state: directory
+      
+    - name: Copy icp files up
+      copy:
+        src: ../cluster
+        dest: /root/
+
+    - name: set perms on hosts script
+      file:
+        dest: /root/cluster/hosts
+        mode: 0755        
+
+    - name: Build installer image 
+      command: docker build -t icp-on-sl /root/cluster 
+
+    - name: Run the following command to deploy IBM Cloud Private
+      debug:
+        msg: "ssh {{ ansible_user }}@{{ hostvars[groups['master'][0]]['primaryIpAddress'] }} docker run -e SL_USERNAME=<SL_USERNAME> -e SL_API_KEY=<SL_API_KEY> -e LICENSE=accept --net=host --rm -t -v /root/cluster:/installer/cluster icp-on-sl install"

@@ -8,8 +8,8 @@ mesos_enabled: false
 install_docker_py: true
 
 sl_datacenter: dal09
-sl_ssh_key: 
-sl_vlan:
+sl_ssh_key: 967877
+sl_vlan: 1919743
 
 sl_icp_masters:
   - icp-master01
@@ -19,4 +19,4 @@ sl_icp_workers:
   - icp-worker02
 
 sl_icp_proxies:
-  - icp-proxy01  
+  - icp-proxy01
