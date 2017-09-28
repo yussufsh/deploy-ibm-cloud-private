@@ -1,5 +1,10 @@
 # Deploy IBM Cloud Private beta
 
+Instructions:
+* [Deploy in local VMs using Vagrant](#deploy-using-vagrant)
+* [Deploy in Softlayer VMs using Ansible](#deploy-on-ibm-cloud-softlayer)
+
+
 ## Deploy using Vagrant:
 
 #### Requirements
