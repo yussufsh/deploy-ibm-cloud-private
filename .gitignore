@@ -1,6 +1,9 @@
 *.retry
 cfc*
 .vagrant
+.DS_Store
+.private
 
+license_accepted
 cluster/ssh_key
 cluster/ssh_key.pub

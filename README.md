@@ -2,67 +2,56 @@
 
 ## Deploy using Vagrant:
 
-You will need to download and run the approprate installer of
-[VirtualBox](https://www.virtualbox.org/wiki/Downloads) and
-[Vagrant](https://www.vagrantup.com/downloads.html)
+#### Requirements
+In order to successfully run the `Vagrantfile` your laptop will need the following:
 
-Once installed, clone this repo and use the Vagrantfile to launch your instance
-of IBM Cloud private.
+ - 4GiB of RAM
+   -  8GiB of RAM will give better performance
+   -  Change the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`
+ - 20GiB of free disk space
+ - VirtualBox 5.1.28 [Download](https://www.virtualbox.org/wiki/Downloads)
+ - Vagrant 2.0.0 [Download](https://www.vagrantup.com/downloads.html)
+ - Operating Systems
+   - Mac OSx 10.12.6
+   - Windows 10
+   - Windows 7
+   - Ubuntu 16.04 & 16.10
+
+Once you have [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](https://www.vagrantup.com/downloads.html) installed, clone this repo and use the Vagrantfile to launch your instance
+of [IBM Cloud Private](https://www.ibm.com/cloud-computing/products/ibm-cloud-private/).
 
 ```bash
 $ git clone https://github.com/IBM/deploy-ibm-cloud-private.git
 $ cd deploy-ibm-cloud-private
 ```
 
-You may want to edit the Vagrantfile to use more resources that what the file
-currently allocates.  i.e. change `memory => 2048` in the first four lines if
-you have more RAM to spare.  Once you are ready:
-```bash
-$ vagrant up
-```
-The beginning and end of the console output should look something like this:
-```text
-[mwagone@oc4258582282 icp]$ vagrant up
-Bringing machine 'cfc-worker1' up with 'virtualbox' provider...
-Bringing machine 'cfc-worker2' up with 'virtualbox' provider...
-Bringing machine 'cfc-master' up with 'virtualbox' provider...
-==> cfc-worker1: Importing base box 'centos/7'...
-==> cfc-worker1: Matching MAC address for NAT networking...
-==> cfc-worker1: Setting the name of the VM: icp_cfc-worker1_1505490687129_87343
-==> cfc-worker1: Clearing any previously set network interfaces...
-==> cfc-worker1: Preparing network interfaces based on configuration...
-    cfc-worker1: Adapter 1: nat
-    cfc-worker1: Adapter 2: hostonly
-==> cfc-worker1: Forwarding ports...
-    cfc-worker1: 22 (guest) => 2222 (host) (adapter 1)
-==> cfc-worker1: Running 'pre-boot' VM customizations...
-==> cfc-worker1: Booting VM...
-==> cfc-worker1: Waiting for machine to boot. This may take a few minutes...
-    cfc-worker1: SSH address: 127.0.0.1:2222
-    cfc-worker1: SSH username: vagrant
-    cfc-worker1: SSH auth method: private key
-.
-.
-.
-.
-.
-==> cfc-master: PLAY RECAP *********************************************************************
-==> cfc-master: 192.168.123.10             : ok=118  changed=53   unreachable=0    failed=0   
-==> cfc-master: 192.168.123.11             : ok=52   changed=31   unreachable=0    failed=0   
-==> cfc-master: 192.168.123.12             : ok=52   changed=31   unreachable=0    failed=0   
-==> cfc-master: localhost                  : ok=87   changed=37   unreachable=0    failed=0   
-==> cfc-master: 
-==> cfc-master: 
-==> cfc-master: POST DEPLOY MESSAGE ************************************************************
-==> cfc-master: 
-==> cfc-master: UI URL is https://192.168.123.10:8443 , default username/password is admin/admin
-==> cfc-master: Playbook run took 0 days, 0 hours, 23 minutes, 40 seconds
-```
-Use the UI URL in a web browser (after accepting a security exception) and you
-will see the dashboard.  It may take a few minutes for the 'Applications'
-section on the upper right to read that they are healthy.
+#### IBM Cloud Private Vagrant Commands
+**install**: `vagrant up`  
+**stop**: `vagrant halt`  
+**start**: `vagrant up`  
+**uninstall**: `vagrant destroy`  
+**login to master node**: `vagrant ssh`  
+**suspend**: `vagrant suspend`  
+**resume**: `vagrant resume` 
 
-![dashboard image](../images/dashboard.png)
+##### TL;DR
+The included `Vagrantfile` defines a single Ubuntu 16.04 VM. On that VM we install [LXD](https://www.ubuntu.com/containers/lxd) - a pure-container hypervisor that runs unmodified Linux guest operating systems with VM-style operations at incredible speed and density. Utilizing [LXD](https://www.ubuntu.com/containers/lxd) we can create a multi-node cluster all running on a single VM and all accessible from the terminal on your laptop. This makes for a great platform for development, test, learning excersizes, and demos. 
+
+Once the `Vagrantfile` has installed and configured [LXD](https://www.ubuntu.com/containers/lxd) and installed all of the IBM Cloud Private community edition prereqs on the VM and all LXD containers defined within, it will begin the process of installing IBM Cloud Private community edition. This process should take about 20-30 mins to complete. Once done you will be able to access the IBM Cloud Private community edition web console here: [https://192.168.27.100:8443](https://192.168.27.100:8443) (assuming you did not have to change the [`base_segment`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L28) value in the `Vagrantfile` see `Conflicting Network Segments` section below for details)  
+
+This `Vagrantfile` will stand up a single [VirtualBox](https://www.virtualbox.org/wiki/Downloads) VM and deploy the `master` and `proxy` nodes onto it. It will configure and start two additional `lxc` containers within the [VirtualBox](https://www.virtualbox.org/wiki/Downloads) VM and install the `worker` nodes onto them (`cfc-worker1` & `cfc-worker2`). The `cpu` and `memory` allocated in the `Vagrantfile` will be shared by the VM and the `lxc` containers running the `worker` nodes within it. You can check the status of the `lxc` instances by ssh'ing into the VM using `vagrant ssh` and then running the command `lxc list`:  
+
+ 
+| NAME        | STATE   | IPV4                           | IPV6 | TYPE       | SNAPSHOTS |  
+| ----------- | ------- | ------------------------------ | ---- | ---------- | --------- |
+| cfc-worker1 | RUNNING | 192.168.27.101 (eth0) 172.17.0.1 (docker0) 10.1.213.128 (tunl0)|      | PERSISTENT | 0         |   
+| cfc-worker2 | RUNNING | 192.168.27.102 (eth0) 172.17.0.1 (docker0) 10.1.54.64 (tunl0)  |      | PERSISTENT | 0         |  
+
+#### Conflicting Network Segments
+If you see the addresses `192.168.56.101` or `192.168.56.102` for either `cfc-worker1` or `cfc-worker2` that means there was a conflicting network segment for the `192.168.27.x` network on your system. You will need to change the `base_segment` value in the `Vagrantfile` to a value that will not overlap any existing segments on your machine. See the comments in the `Vagrantfile` for [examples](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L24-L28)
+
+#### Web/Kube Dashboard Showing 3X Amount of Memory/CPU than I have on My Laptop
+Because we are using `lxc` containers to run the `cfc-worker1` and `cfc-worker2` nodes you will see the IBM Cloud Private community edition Dashboard report 3x as much memory availble in your cluster than you allocated via the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`. Don't worry, this is normal.  `LXD` is sharing the total memory available to the VirtualBox VM with each `lxc` instance so the amount of memory you see being reported in the IBM Cloud Private community edition console is a result of each node reporting that it has the amount of `memory` allocated to the VirtualBox host in the `memory` setting. The best way to think about how `lxc` instances share host resources is to think of `lxc` instances as being applications that run on your laptop where each `lxc` instance is an application and the host where the `lxc` instances are running is the laptop. Each `lxc` instance can request memory or cpu from the host as needed and return those resources when they are no longer needed just like running multiple applications on your laptop does.
 
 
 
