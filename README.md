@@ -1,5 +1,10 @@
 # Deploy IBM Cloud Private beta
 
+Instructions:
+* [Deploy in local VMs using Vagrant](#deploy-using-vagrant)
+* [Deploy in Softlayer VMs using Ansible](#deploy-on-ibm-cloud-softlayer)
+
+
 ## Deploy using Vagrant:
 
 #### Requirements
@@ -171,24 +176,9 @@ PLAY RECAP *********************************************************************
 localhost                  : ok=3    changed=2    unreachable=0    failed=0   
 ```
 
-
-While the above systems are being created we can slipstream the softlayer python libraries into
-the IBM Cloud Private deployer so that we can use the [Softlayer Dynamic Inventory](cluster/hosts):
-
-```bash
-$ docker build -t icp-on-sl .
-Sending build context to Docker daemon  120.3kB
-Step 1/2 : FROM ibmcom/cfc-installer:1.1.0
- ---> 91bc38bcb3a8
-Step 2/2 : RUN apt-get update &&     apt-get install -y python-pip &&     pip install softlayer
- ---> Using cache
- ---> 20dd79bda317
-Successfully built 20dd79bda317
-Successfully tagged icp-on-sl
-```
-
 Once the systems are online you should be able to prepare them for the ICP install using the following
-Ansible playbook.
+Ansible playbook. This playbook will clean up some Softlayer quirks, install Docker and slipstream the
+softlayer dynamic inventory dependencies into the ICP installer.
 
 ```bash
 $ ssh-add cluster/ssh_key
@@ -202,6 +192,10 @@ ok: [169.46.198.195]
 ok: [169.46.198.216]
 ...
 ...
+TASK [Run the following command to deploy IBM Cloud Private] *************************************************************************************************************************
+ok: [169.46.198.212] => {
+    "msg": "ssh root@169.46.198.212 docker run -e SL_USERNAME=<SL_USERNAME> -e SL_API_KEY=<SL_API_KEY> -e LICENSE=accept --net=host --rm -t -v /root/cluster:/installer/cluster icp-on-sl install"
+}
 PLAY RECAP ***************************************************************************************************************************************************************************
 169.46.198.195             : ok=8    changed=6    unreachable=0    failed=0   
 169.46.198.209             : ok=8    changed=6    unreachable=0    failed=0   
@@ -209,15 +203,15 @@ PLAY RECAP *********************************************************************
 ```
 
 
-Once that playbook has finished running we can use our modified deployer to deploy ICP:
+Once that playbook has finished running we can use our modified deployer to deploy ICP (the final line in the previous command will give you the command syntax, you just need to plug in your SL credentials)
 
 ```bash
 $ cat ~/.softlayer
 [softlayer]
 username = XXXXX
 api_key = YYYY
-$ docker run -e SL_USERNAME=XXXXX -e SL_API_KEY=YYYY -e LICENSE=accept --net=host \
-   --rm -t -v "$(pwd)/cluster":/installer/cluster icp-on-sl install
+$ ssh root@169.46.198.216 docker run -e SL_USERNAME=XXXXX -e SL_API_KEY=YYYY -e LICENSE=accept --net=host \
+   --rm -t -v /root/cluster:/installer/cluster icp-on-sl install
 ...
 ...
 PLAY RECAP *********************************************************************

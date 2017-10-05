@@ -20,7 +20,7 @@
         cpus: 2
         memory: 4096
         disks: [100]
-        os_code: CENTOS_LATEST
+        os_code: UBUNTU_LATEST
         private_vlan: "{{ sl_vlan|default(omit) }}"
         wait: no
         ssh_keys: "{{ sl_ssh_key|default(omit) }}"
@@ -39,7 +39,7 @@
         cpus: 2
         memory: 4096
         disks: [100]
-        os_code: CENTOS_LATEST
+        os_code: UBUNTU_LATEST
         private_vlan: "{{ sl_vlan|default(omit) }}"
         wait: no
         ssh_keys: "{{ sl_ssh_key|default(omit) }}"
@@ -58,7 +58,7 @@
         cpus: 2
         memory: 4096
         disks: [100]
-        os_code: CENTOS_LATEST
+        os_code: UBUNTU_LATEST
         private_vlan: "{{ sl_vlan|default(omit) }}"
         wait: no
         ssh_keys: "{{ sl_ssh_key|default(omit) }}"
