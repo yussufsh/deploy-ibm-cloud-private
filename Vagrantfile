@@ -1,7 +1,7 @@
 # Licensed under Apache License Version 2.0
 # 
 # @ Authur Tim Pouyer tpouyer@us.ibm.com
-# https://github.com/IBM/ibm-cloud-private-dev-edition/blob/master/LICENSE
+# https://raw.githubusercontent.com/IBM/deploy-ibm-cloud-private/master/LICENSE
 
 # Software License Terms Acceptence (see https://hub.docker.com/r/ibmcom/icp-inception/)
 # If you accept the Software license terms please change the value below to 'accept'
@@ -12,11 +12,11 @@ cpus = '4'
 
 # this will cause memory swaping in the VM 
 # performance is decent with SSD drives but may not be with spinning disks
-memory = '4096'
+#memory = '4096'
 
 # use this setting for better performance if you have the ram available on your laptop
 # uncomment the below line and comment out the above line "#memory = '4096'"
-# memory = '8192'
+memory = '8192'
 
 # Update version to pull a specific version i.e. version = '2.1.0-beta-1'
 version = "2.1.0-beta-2"
@@ -32,6 +32,17 @@ federation_enabled = 'false'
 
 # enable the metering service
 metering_enabled = 'true'
+
+# disabled mgmt services list
+# disabling vulnerability advisor by default in beta
+disabled_management_services = '[“va”]'
+
+# use apt-cacher-ng & docker registry cache servers
+# see instructions in the `README.md` under #Advanced Cache Setup
+use_cache = 'false'
+cache_host = '192.168.27.99'
+apt_cache_port = '3142'
+docker_registry_port = '5000'
 
 ###############################################################################
 #                  DO NOT MODIFY ANYTHING BELOW THIS POINT                    #
@@ -86,6 +97,9 @@ wait_for_timeout: 3600
 
 # enable the metering service
 metering_enabled: false
+
+# disabled mgmt services list
+disabled_management_services: #{disabled_management_services}
 
 # following variables are used to pickup internal builds
 version: latest
@@ -145,6 +159,21 @@ if File.exist?(".private")
   docker_password = $docker_password
 end
 
+docker_mirror = ''
+apt_proxy_conf = ''
+
+if use_cache.downcase.eql? 'true'
+	docker_mirror = "\"registry-mirrors\": [\"http://#{cache_host}:#{docker_registry_port}\"]"
+	apt_proxy_conf = "
+            Acquire {
+            	http {
+            		Proxy \"http://#{cache_host}:#{apt_cache_port}/\";
+            		security.ubuntu.com \"DIRECT\";
+            		get.docker.com \"DIRECT\";
+            	};
+            };"
+end
+
 configure_master_ssh_keys = <<SCRIPT
 echo "#{rsa_private_key}" >> /home/vagrant/.ssh/id_rsa
 echo "$(cat /home/vagrant/.ssh/authorized_keys)" >> /home/vagrant/.ssh/id_rsa.pub
@@ -192,6 +221,14 @@ sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="cgroup_e
 sudo update-grub
 SCRIPT
 
+configure_apt_proxy = <<SCRIPT
+sudo bash -c 'cat > /etc/apt/apt.conf.d/02apt-cacher' <<'EOF'
+Acquire::http::Proxy "http://#{cache_host}:#{apt_cache_port}/";
+Acquire::http::Proxy::security.ubuntu.com "DIRECT";
+Acquire::http::Proxy::get.docker.com "DIRECT";
+EOF
+SCRIPT
+
 install_icp_prereqs = <<SCRIPT
 export DEBIAN_FRONTEND=noninteractive
 sudo bash -c 'cat > /etc/apt/apt.conf.d/01lean' <<'EOF'
@@ -203,9 +240,9 @@ Dir::Cache "";
 Dir::Cache::archives "";
 EOF
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb\_release -cs) stable"
+sudo add-apt-repository "deb [arch=amd64] http://download.docker.com/linux/ubuntu $(lsb\_release -cs) stable"
 sudo apt-get update --yes --quiet
-sudo apt-get install --yes --quiet --target-release=xenial-backports lxd bridge-utils dnsmasq thin-provisioning-tools \
+sudo apt-get install --yes --quiet --target-release=xenial-backports lxd lxd-client bridge-utils dnsmasq thin-provisioning-tools \
     curl linux-image-extra-$(uname -r) linux-image-extra-virtual apt-transport-https ca-certificates software-properties-common \
     docker-ce python-setuptools python-pip build-essential python-dev nfs-kernel-server nfs-common aufs-tools ntp
 sudo sed -i 's|ExecStart=/usr/bin/dockerd -H fd://|ExecStart=/usr/bin/dockerd -H fd:// --max-concurrent-downloads 10 --mtu=9000|g' /etc/systemd/system/multi-user.target.wants/docker.service
@@ -224,6 +261,12 @@ server time3.google.com
 server time4.google.com
 EOF
 sudo systemctl restart ntp
+SCRIPT
+
+configure_docker_mirror = <<SCRIPT
+echo '{ "registry-mirrors": ["http://#{cache_host}:#{docker_registry_port}"] }' | sudo tee /etc/docker/daemon.json
+sudo systemctl daemon-reload
+sudo systemctl restart docker
 SCRIPT
 
 add_storage_vol = <<SCRIPT
@@ -362,10 +405,10 @@ profiles:
               Cache {
                 archives "";
               };
-            };
+            };#{apt_proxy_conf}
           sources:
             source1:
-              source: "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb\_release -cs) stable"
+              source: "deb [arch=amd64] http://download.docker.com/linux/ubuntu $(lsb\_release -cs) stable"
               key: |
 $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/                /')
         package_update: true
@@ -397,6 +440,12 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
           - [ usermod, -aG, docker, vagrant ]
           - [ ufw, disable ]
           - [ touch, /DONE ]
+        write_files:
+          - content: |
+              {
+                #{docker_mirror}
+              }
+            path: /etc/docker/daemon.json
     devices: 
       eth0: 
         name: eth0
@@ -482,7 +531,7 @@ wait_for_worker_nodes_to_boot = <<SCRIPT
 echo ""
 echo "Preparing nodes for IBM Cloud Private community edition cluster installation."
 echo "This process will take approximately 10-20 minutes depending on network speeds."
-echo "Take a break and go grab a cup of coffee, we'll keep working on this while your away ;-)"
+echo "Take a break and go grab a cup of coffee, we'll keep working on this while you're away ;-)"
 echo ""
 FILES="/home/vagrant/cluster/cfc-worker1
 /home/vagrant/cluster/cfc-worker2"
@@ -733,6 +782,10 @@ sudo systemctl enable icp-ce-startup.service
 curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -s 'http://bit.ly/2fqp98V' > /dev/null || true
 SCRIPT
 
+install_shellinabox = <<SCRIPT
+sudo apt-get install -y shellinabox &> /dev/null
+SCRIPT
+
 happy_dance = <<SCRIPT
 cat << 'EOF'
 
@@ -783,15 +836,19 @@ cat << 'EOF'
                          . M   MMI MMM  MM  MMM..MM                             
                               ..NM =MM .MM .MD..  .                            
 
+
 ###############################################################################
 #          IBM Cloud Private community edition installation complete!         #
 #                  The web console is now available at:                       #
 #                                                                             #
-#                     https://#{base_segment}.100:8443                             #
-#                default username/password is admin/admin                     #
+#                          https://#{base_segment}.100:8443                         #
+#                   default username/password is admin/admin                  #
 #                                                                             #
-#                       Documentation available at:                           #
-#              https://www.ibm.com/support/knowledgecenter/SSBS6K             #
+#                          Documentation available at:                        #
+#               https://www.ibm.com/support/knowledgecenter/SSBS6K            #
+#                                                                             #
+#                 Request access to the ICP-ce Public Slack!:                 #
+#                            http://ibm.biz/BdsHmN                            #
 ###############################################################################
 EOF
 SCRIPT
@@ -812,7 +869,13 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", privileged: false, inline: configure_master_ssh_keys, keep_color: true, name: "configure_master_ssh_keys"
   config.vm.provision "shell", privileged: false, inline: configure_swap_space, keep_color: true, name: "configure_swap_space"
   config.vm.provision "shell", privileged: false, inline: configure_performance_settings, keep_color: true, name: "configure_performance_settings"
+  if use_cache.downcase.eql? 'true'
+  	config.vm.provision "shell", privileged: false, inline: configure_apt_proxy, keep_color: true, name: "configure_apt_proxy"
+  end
   config.vm.provision "shell", privileged: false, inline: install_icp_prereqs, keep_color: true, name: "install_icp_prereqs"
+  if use_cache.downcase.eql? 'true'
+  	config.vm.provision "shell", privileged: false, inline: configure_docker_mirror, keep_color: true, name: "configure_docker_mirror"
+  end
   config.vm.provision "shell", privileged: false, inline: add_storage_vol, keep_color: true, name: "add_storage_vol"
   config.vm.provision "shell", privileged: false, inline: setup_nfs_shares, keep_color: true, name: "setup_nfs_shares"
   config.vm.provision "shell", privileged: false, inline: configure_nat_iptable_rules, keep_color: true, name: "configure_nat_iptable_rules"
@@ -880,6 +943,7 @@ Vagrant.configure(2) do |config|
     icp.vm.provision "shell", privileged: false, inline: create_persistant_volumes, keep_color: true, name: "create_persistant_volumes"
     icp.vm.provision "shell", privileged: false, inline: install_helm, keep_color: true, name: "install_helm"
     icp.vm.provision "shell", privileged: false, inline: install_startup_script, keep_color: true, name: "install_startup_script"
+    icp.vm.provision "shell", privileged: false, inline: install_shellinabox, keep_color: true, name: "install_shellinabox"
     icp.vm.provision "shell", privileged: false, inline: happy_dance, keep_color: true, name: "happy_dance"
   end
 end

@@ -51,9 +51,32 @@ This `Vagrantfile` will stand up a single [VirtualBox](https://www.virtualbox.or
 If you see the addresses `192.168.56.101` or `192.168.56.102` for either `cfc-worker1` or `cfc-worker2` that means there was a conflicting network segment for the `192.168.27.x` network on your system. You will need to change the `base_segment` value in the `Vagrantfile` to a value that will not overlap any existing segments on your machine. See the comments in the `Vagrantfile` for [examples](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L24-L28)
 
 #### Web/Kube Dashboard Showing 3X Amount of Memory/CPU than I have on My Laptop
-Because we are using `lxc` containers to run the `cfc-worker1` and `cfc-worker2` nodes you will see the IBM Cloud Private community edition Dashboard report 3x as much memory availble in your cluster than you allocated via the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`. Don't worry, this is normal.  `LXD` is sharing the total memory available to the VirtualBox VM with each `lxc` instance so the amount of memory you see being reported in the IBM Cloud Private community edition console is a result of each node reporting that it has the amount of `memory` allocated to the VirtualBox host in the `memory` setting. The best way to think about how `lxc` instances share host resources is to think of `lxc` instances as being applications that run on your laptop where each `lxc` instance is an application and the host where the `lxc` instances are running is the laptop. Each `lxc` instance can request memory or cpu from the host as needed and return those resources when they are no longer needed just like running multiple applications on your laptop does.
+Because we are using `lxc` containers to run the `cfc-worker1` and `cfc-worker2` nodes you will see the IBM Cloud Private community edition Dashboard report 3x as much memory availble in your cluster than you allocated via the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`. Don't worry, this is normal.  `LXD` is sharing the total memory available to the VirtualBox VM with each `lxc` instance so the amount of memory you see being reported in the IBM Cloud Private community edition console is a result of each node reporting that it has the amount of `memory` allocated to the VirtualBox host in the `memory` setting. The best way to think about how `lxc` instances share host resources is to think of `lxc` instances as being applications that run on your laptop where each `lxc` instance is an application and the host where the `lxc` instances are running is the laptop. Each `lxc` instance can request memory or cpu from the host as needed and return those resources when they are no longer needed just like running multiple applications on your laptop does.  
 
+#### Advanced Cache Setup  
+If you find yourself running this Vagrant setup multiple times it might be a good idea to setup a _pass-through_ proxy cache server for both the `apt-get` package installs as well as the `docker pull` calls. We've made it easy for you to setup a cache server.  In the same directory as the `Vagrantfile` there is a file called `Cachefile`.  The `Cachefile` is another Vagrant file that is configured to stand up an _apt-cacher-ng_ server as well as a _docker registry_ server. You can run it with:  
 
+```  
+export  VAGRANT_VAGRANTFILE=Cachefile  
+vagrant up
+```  
+Both servers act as simple _proxy pass-through_ servers. When you configure the `Vagrantfile` to `use_cache = 'true'` and set the `cache_host = '192.168.27.99'` (which is the default value set in the `Vagrantfile`) all `apt-get install` and `docker pull` commands will proxy through the cache server and use the resources allready cached there or continue on to the original source and cache the result on the cache server. Using the cache server will significantly decrease the amount of time it takes to install ICP on subsequent installs.  
+
+If you want to run the cache server on another machine you will need to identify the IP of the host where you're running the cache server instance and use that value in the `cache_host` property in the `Vagrantfile`.  By default the `Cachefile` will port-forward all requests on the host for `3142` & `5000` onto the vagrant instance of cache server running on the host.  
+
+To persist the cache between restarts **DON'T DESTROY THE CACHE VAGRANT INSTANCE**.  
+To stop the cache server run the following:  
+
+```  
+export  VAGRANT_VAGRANTFILE=Cachefile  
+vagrant halt
+```  
+To start the cache server up again run the following:  
+
+```  
+export  VAGRANT_VAGRANTFILE=Cachefile  
+vagrant up
+```  
 
 ## Deploy on IBM Cloud (softlayer)
 

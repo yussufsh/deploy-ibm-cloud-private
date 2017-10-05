@@ -1,0 +1,287 @@
+# Licensed under Apache License Version 2.0
+# 
+# @ Authur Tim Pouyer tpouyer@us.ibm.com
+# https://github.com/IBM/ibm-cloud-private-dev-edition/blob/master/LICENSE
+#
+# This vagrantfile will setup an apt-cacher-ng server that acts as a proxy-passthrough
+# server for all apt-get package installs. You can check the hits/misses stats via
+# http://#{base_segment}.99:3142/acng-report.html?doCount=Count+Data#stats
+#
+# This vagrantfile will also setup a docker-registry proxy-passthrough cache at
+# http://#{base_segment}.99:5000 
+# 
+# Quick Start:
+# export  VAGRANT_VAGRANTFILE=Cachefile
+# vagrant up
+
+# most laptops have at least 8 cores nowadays (adjust based on your laptop hardware)
+cpus = '1'
+
+# this will cause memory swaping in the VM 
+# performance is decent with SSD drives but may not be with spinning disks
+memory = '512'
+
+# host-only network segment - in most cases you do not have to change this value
+# on some systems this network segment may overlap another network already on your
+# system. In those cases you will need to change this value to another value
+# i.e. 192.168.56 or 192.168.16 etc...
+base_segment = '192.168.27'
+
+vm_name = "ICP-Cache-Server"
+user_home_path = ENV['HOME']
+if Vagrant::Util::Platform.windows?
+  user_home_path = Vagrant::Util::Platform.fs_real_path(ENV['USERPROFILE'])
+end
+apt_cache_storage_disk_path = Vagrant::Util::Platform.fs_real_path("#{user_home_path}/VirtualBox VMs/#{vm_name}/apt_cache_storage_disk.vmdk")
+docker_cache_storage_disk_path = Vagrant::Util::Platform.fs_real_path("#{user_home_path}/VirtualBox VMs/#{vm_name}/docker_cache_storage_disk.vmdk")
+rsa_private_key = IO.read(Vagrant::Util::Platform.fs_real_path("#{Vagrant.user_data_path}/insecure_private_key"))
+
+configure_master_ssh_keys = <<SCRIPT
+echo "#{rsa_private_key}" >> /home/vagrant/.ssh/id_rsa
+echo "$(cat /home/vagrant/.ssh/authorized_keys)" >> /home/vagrant/.ssh/id_rsa.pub
+echo 'StrictHostKeyChecking no\nUserKnownHostsFile /dev/null\nLogLevel QUIET' >> /home/vagrant/.ssh/config
+SCRIPT
+
+configure_swap_space = <<SCRIPT
+sudo rm -f /mnt/swap
+sudo fallocate -l 4g /mnt/swap
+sudo chmod 600 /mnt/swap
+sudo mkswap /mnt/swap
+sudo swapon /mnt/swap
+echo "/mnt/swap swap swap defaults 0 0" | sudo tee --append /etc/fstab > /dev/null
+echo "vm.swappiness = 40" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "vm.vfs_cache_pressure = 50" | sudo tee --append /etc/sysctl.conf > /dev/null
+sudo sysctl -p
+SCRIPT
+
+configure_performance_settings = <<SCRIPT
+echo "net.ipv4.ip_forward = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.all.rp_filter = 0" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.default.rp_filter = 0" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv6.conf.default.disable_ipv6 = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv6.conf.lo.disable_ipv6 = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.tcp_mem = 182757 243679 365514" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.core.netdev_max_backlog = 182757" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.enp0s3.proxy_arp = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "fs.inotify.max_queued_events = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "fs.inotify.max_user_instances = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "fs.inotify.max_user_watches = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "vm.max_map_count = 262144" | sudo tee --append /etc/sysctl.conf > /dev/null
+
+echo "* soft nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
+echo "* hard nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
+echo "root soft nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
+echo "root hard nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
+echo "* soft memlock unlimited" | sudo tee --append /etc/security/limits.conf > /dev/null
+echo "* hard memlock unlimited" | sudo tee --append /etc/security/limits.conf > /dev/null
+sudo sysctl -p
+
+echo Y | sudo tee /sys/module/fuse/parameters/userns_mounts
+echo Y | sudo tee /sys/module/ext4/parameters/userns_mounts
+sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="cgroup_enable=memory swapaccount=1 /g' /etc/default/grub
+sudo update-grub
+SCRIPT
+
+install_prereqs = <<SCRIPT
+export DEBIAN_FRONTEND=noninteractive
+sudo bash -c 'cat > /etc/apt/apt.conf.d/01lean' <<'EOF'
+APT::Install-Suggests "0";
+APT::Install-Recommends "0";
+APT::AutoRemove::SuggestsImportant "false";
+APT::AutoRemove::RecommendsImportant "false";
+Dir::Cache "";
+Dir::Cache::archives "";
+EOF
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb\_release -cs) stable"
+sudo apt-get update --yes --quiet
+sudo apt-get install --yes --quiet thin-provisioning-tools curl linux-image-extra-$(uname -r) linux-image-extra-virtual \
+    apt-transport-https ca-certificates software-properties-common docker-ce python-setuptools python-pip build-essential \
+    python-dev nfs-kernel-server nfs-common aufs-tools ntp apt-cacher-ng
+sudo sed -i 's|ExecStart=/usr/bin/dockerd -H fd://|ExecStart=/usr/bin/dockerd -H fd:// --max-concurrent-downloads 10 --mtu=9000|g' /etc/systemd/system/multi-user.target.wants/docker.service
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+sudo -H pip install --upgrade pip
+sudo -H pip install docker
+sudo usermod -aG docker vagrant
+newgrp docker
+sudo bash -c 'cat > /etc/ntp.conf' <<'EOF'
+server time1.google.com
+server time2.google.com
+server time3.google.com
+server time4.google.com
+EOF
+sudo systemctl restart ntp
+SCRIPT
+
+add_apt_cache_storage_vol = <<SCRIPT
+sudo pvcreate /dev/sdb
+sudo vgextend vagrant-vg /dev/sdb
+sudo lvcreate -l 100%FREE -n storage vagrant-vg
+sudo mkfs -t ext4 /dev/mapper/vagrant--vg-storage
+sudo mkdir -p /var/cache/apt-cacher-ng
+sudo mount -t ext4 /dev/mapper/vagrant--vg-storage /var/cache/apt-cacher-ng
+echo "/dev/mapper/vagrant--vg-storage /var/cache/apt-cacher-ng        ext4  defaults  0    2"  | sudo tee --append /etc/fstab > /dev/null
+sudo chown apt-cacher-ng:apt-cacher-ng /var/cache/apt-cacher-ng/
+sudo systemctl restart apt-cacher-ng.service
+SCRIPT
+
+configure_apt_client = <<SCRIPT
+sudo bash -c 'cat > /etc/apt/apt.conf.d/02apt-cacher' <<'EOF'
+Acquire::http::Proxy "http://#{base_segment}.99:3142/";
+Acquire::http::Proxy::security.ubuntu.com "DIRECT";
+Acquire::http::Proxy::get.docker.com "DIRECT";
+EOF
+SCRIPT
+
+add_docker_cache_storage_vol = <<SCRIPT
+sudo pvcreate /dev/sdc
+sudo vgextend vagrant-vg /dev/sdc
+sudo lvcreate -l 100%FREE -n docker vagrant-vg
+sudo mkfs -t ext4 /dev/mapper/vagrant--vg-docker
+sudo mkdir /var/cache/docker
+sudo mount -t ext4 /dev/mapper/vagrant--vg-docker /var/cache/docker
+echo "/dev/mapper/vagrant--vg-docker /var/cache/docker        ext4  defaults  0    2"  | sudo tee --append /etc/fstab > /dev/null
+sudo chown :docker /var/cache/docker/
+SCRIPT
+
+configure_docker_cache = <<SCRIPT
+sudo bash -c 'cat > /var/cache/docker/config.yml' <<'EOF'
+version: 0.1
+log:
+  accesslog:
+    disabled: false
+  level: info
+  formatter: text
+  fields:
+    service: registry
+storage:
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+  redirect:
+    disable: true
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
+proxy:
+  remoteurl: https://registry-1.docker.io
+EOF
+sudo docker run -d --restart=always -p 5000:5000 --name v2-mirror -v /var/cache/docker:/var/lib/registry registry:2 /var/lib/registry/config.yml
+SCRIPT
+
+configure_nat_iptable_rules = <<SCRIPT
+sudo iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
+SCRIPT
+
+install_startup_script = <<SCRIPT
+sudo bash -c 'cat > /usr/local/bin/icp-cache-startup.sh' <<'EOF'
+#!/bin/bash
+
+sudo iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
+EOF
+sudo chmod 744 /usr/local/bin/icp-cache-startup.sh
+
+sudo bash -c 'cat > /etc/systemd/system/icp-cache-startup.service' <<'EOF'
+[Unit]
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/icp-cache-startup.sh
+
+[Install]
+WantedBy=default.target
+EOF
+sudo chmod 644 /etc/systemd/system/icp-cache-startup.service
+sudo systemctl daemon-reload
+sudo systemctl enable icp-cache-startup.service
+SCRIPT
+
+install_shellinabox = <<SCRIPT
+sudo apt-get install -y shellinabox &> /dev/null
+SCRIPT
+
+Vagrant.configure(2) do |config|
+
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+  end
+
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
+  config.ssh.insert_key = false
+  config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+
+  config.vm.provision "shell", privileged: false, inline: configure_master_ssh_keys, keep_color: true, name: "configure_master_ssh_keys"
+  config.vm.provision "shell", privileged: false, inline: configure_swap_space, keep_color: true, name: "configure_swap_space"
+  config.vm.provision "shell", privileged: false, inline: configure_performance_settings, keep_color: true, name: "configure_performance_settings"
+  config.vm.provision "shell", privileged: false, inline: install_prereqs, keep_color: true, name: "install_prereqs"
+  config.vm.provision "shell", privileged: false, inline: add_apt_cache_storage_vol, keep_color: true, name: "add_apt_cache_storage_vol"
+  config.vm.provision "shell", privileged: false, inline: configure_apt_client, keep_color: true, name: "configure_apt_client"
+  config.vm.provision "shell", privileged: false, inline: add_docker_cache_storage_vol, keep_color: true, name: "add_docker_cache_storage_vol"
+  config.vm.provision "shell", privileged: false, inline: configure_docker_cache, keep_color: true, name: "configure_docker_cache"
+  config.vm.provision "shell", privileged: false, inline: configure_nat_iptable_rules, keep_color: true, name: "configure_nat_iptable_rules"
+  config.vm.provision "shell", privileged: false, inline: install_startup_script, keep_color: true, name: "install_startup_script"
+  config.vm.provision "shell", privileged: false, inline: install_shellinabox, keep_color: true, name: "install_shellinabox"
+
+  config.vm.define "icp_cache" do |icp_cache|
+    icp_cache.vm.box = "bento/ubuntu-16.04"
+    icp_cache.vm.hostname = "cache.icp"
+    icp_cache.vm.box_check_update = false
+    icp_cache.vm.network "private_network", ip: "#{base_segment}.99", adapter_ip: "#{base_segment}.1", netmask: "255.255.255.0", mtu: 9000, auto_config: true
+    icp_cache.vm.network "forwarded_port", guest: 3142, host: 3142
+    icp_cache.vm.network "forwarded_port", guest: 5000, host: 5000
+    icp_cache.vm.provider "virtualbox" do |virtualbox|
+      virtualbox.name = "#{vm_name}"
+      virtualbox.gui = false
+      virtualbox.customize ["modifyvm", :id, "--ioapic", "off"] # turn off I/O APIC
+      virtualbox.customize ["modifyvm", :id, "--cpus", "#{cpus}"] # set number of vcpus
+      virtualbox.customize ["modifyvm", :id, "--memory", "#{memory}"] # set amount of memory allocated vm memory
+      virtualbox.customize ["modifyvm", :id, "--ostype", "Ubuntu_64"] # set guest OS type
+      virtualbox.customize ["modifyvm", :id, "--natdnshostresolver1", "on"] # enables DNS resolution from guest using host's DNS
+      virtualbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"] # turn on promiscuous mode on nic 2
+      virtualbox.customize ["modifyvm", :id, "--nictype1", "virtio"]
+      virtualbox.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      virtualbox.customize ["modifyvm", :id, "--pae", "on"] # enables PAE
+      virtualbox.customize ["modifyvm", :id, "--longmode", "on"] # enables long mode (64 bit mode in GUEST OS)
+      virtualbox.customize ["modifyvm", :id, "--hpet", "on"] # enables a High Precision Event Timer (HPET)
+      virtualbox.customize ["modifyvm", :id, "--hwvirtex", "on"] # turn on host hardware virtualization extensions (VT-x|AMD-V)
+      virtualbox.customize ["modifyvm", :id, "--nestedpaging", "on"] # if --hwvirtex is on, this enables nested paging
+      virtualbox.customize ["modifyvm", :id, "--largepages", "on"] # if --hwvirtex & --nestedpaging are on
+      virtualbox.customize ["modifyvm", :id, "--vtxvpid", "on"] # if --hwvirtex on
+      virtualbox.customize ["modifyvm", :id, "--vtxux", "on"] # if --vtux on (Intel VT-x only) enables unrestricted guest mode
+      virtualbox.customize ["modifyvm", :id, "--boot1", "disk"] # tells vm to boot from disk only
+      virtualbox.customize ["modifyvm", :id, "--rtcuseutc", "on"] # lets the real-time clock (RTC) operate in UTC time
+      virtualbox.customize ["modifyvm", :id, "--audio", "none"] # turn audio off
+      virtualbox.customize ["modifyvm", :id, "--clipboard", "disabled"] # disable clipboard
+      virtualbox.customize ["modifyvm", :id, "--usbehci", "off"] # disable usb hot-plug drivers
+      virtualbox.customize ["modifyvm", :id, "--vrde", "off"]
+      virtualbox.customize [ "setextradata", :id, "VBoxInternal/Devices/VMMDev/0/Config/GetHostTimeDisabled", 0 ] # turns the timesync on
+      virtualbox.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-interval", 10000 ] # sync time every 10 seconds
+      virtualbox.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-min-adjust", 100 ] # adjustments if drift > 100 ms
+      virtualbox.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-on-restore", 1 ] # sync time on restore
+      virtualbox.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-start", 1 ] # sync time on start
+      virtualbox.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 1000 ] # at 1 second drift, the time will be set and not "smoothly" adjusted 
+      virtualbox.customize ['modifyvm', :id, '--cableconnected1', 'on'] # fix for https://github.com/mitchellh/vagrant/issues/7648
+      virtualbox.customize ['modifyvm', :id, '--cableconnected2', 'on'] # fix for https://github.com/mitchellh/vagrant/issues/7648
+      if !File.exists?("#{apt_cache_storage_disk_path}")
+        virtualbox.customize ['createhd', '--filename', "#{apt_cache_storage_disk_path}", '--size', 500 * 1024]
+      end
+      if !File.exists?("#{docker_cache_storage_disk_path}")
+        virtualbox.customize ['createhd', '--filename', "#{docker_cache_storage_disk_path}", '--size', 500 * 1024]
+      end
+      virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', "#{apt_cache_storage_disk_path}"]
+      virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', "#{docker_cache_storage_disk_path}"]
+    end
+  end
+end
