@@ -7,63 +7,7 @@
     - name: Include cluster vars
       include_vars:
         file: ../cluster/config.yaml
-    - name: destroy master
+    - name: Cancel by tag
       sl_vm:
-        hostname: "{{ item }}"
-        domain: example.com
-        datacenter: "{{ sl_datacenter|default('dal09') }}"
-        tags: "{{ item }},icp,master"
-        hourly: True
-        private: False
-        dedicated: False
-        local_disk: True
-        cpus: 2
-        memory: 4096
-        disks: [100]
-        os_code: CENTOS_LATEST
-        private_vlan: "{{ sl_vlan|default(omit) }}"
-        wait: no
-        ssh_keys: "{{ sl_ssh_key|default(omit) }}"
         state: absent
-      with_items: " {{ sl_icp_masters }}"
-
-
-    - name: destroy workers
-      sl_vm:
-        hostname: "{{ item }}"
-        domain: example.com
-        datacenter: "{{ sl_datacenter|default('dal09') }}"
-        tags: "{{ item }},icp,worker"
-        hourly: True
-        private: False
-        dedicated: False
-        local_disk: True
-        cpus: 2
-        memory: 4096
-        disks: [100]
-        os_code: CENTOS_LATEST
-        private_vlan: "{{ sl_vlan|default(omit) }}"
-        wait: no
-        ssh_keys: "{{ sl_ssh_key|default(omit) }}"
-        state: absent
-      with_items: " {{ sl_icp_workers }}"
-
-    - name: destroy proxies
-      sl_vm:
-        hostname: "{{ item }}"
-        domain: example.com
-        datacenter: "{{ sl_datacenter|default('dal09') }}"
-        tags: "{{ item }},icp,proxy"
-        hourly: True
-        private: False
-        dedicated: False
-        local_disk: True
-        cpus: 2
-        memory: 4096
-        disks: [100]
-        os_code: CENTOS_LATEST
-        private_vlan: "{{ sl_vlan|default(omit) }}"
-        wait: no
-        ssh_keys: "{{ sl_ssh_key|default(omit) }}"
-        state: absent
-      with_items: " {{ sl_icp_proxies }}"
+        tags: icp
