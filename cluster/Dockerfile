@@ -1,5 +1,4 @@
-FROM ibmcom/icp-inception:2.1.0-beta-2
+FROM ibmcom/icp-inception:2.1.0-beta-3
 
-RUN apt-get update -q && \
-    apt-get install -yq python-pip && \
+RUN apk add --update python python-dev py-pip && \
     pip install softlayer

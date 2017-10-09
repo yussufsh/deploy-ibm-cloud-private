@@ -18,7 +18,7 @@
         dedicated: False
         local_disk: True
         cpus: 2
-        memory: 4096
+        memory: 8192
         disks: [100]
         os_code: UBUNTU_LATEST
         private_vlan: "{{ sl_vlan|default(omit) }}"
