@@ -19,7 +19,7 @@ cpus = '4'
 memory = '8192'
 
 # Update version to pull a specific version i.e. version = '2.1.0-beta-1'
-version = "2.1.0-beta-2"
+version = "2.1.0-beta-3"
 
 # host-only network segment - in most cases you do not have to change this value
 # on some systems this network segment may overlap another network already on your
@@ -100,6 +100,8 @@ metering_enabled: false
 
 # disabled mgmt services list
 disabled_management_services: #{disabled_management_services}
+
+kubelet_extra_args: [\"--cgroup-driver=cgroupfs\"]
 
 # following variables are used to pickup internal builds
 version: latest
@@ -206,6 +208,7 @@ echo "fs.inotify.max_queued_events = 1048576" | sudo tee --append /etc/sysctl.co
 echo "fs.inotify.max_user_instances = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "fs.inotify.max_user_watches = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "vm.max_map_count = 262144" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "kernel.dmesg_restrict = 0" | sudo tee --append /etc/sysctl.conf > /dev/null
 
 echo "* soft nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
 echo "* hard nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
@@ -786,6 +789,22 @@ install_shellinabox = <<SCRIPT
 sudo apt-get install -y shellinabox &> /dev/null
 SCRIPT
 
+ensure_services_up = <<SCRIPT
+echo "Waiting for all IBM Cloud Private Services to start..."
+count=0
+while [[ '' != $(kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running) ]]
+do
+  if [ "50" -lt "$count" ]; then
+  	echo "Failed to start all IBM Cloud Private Services..."
+  	kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running
+    exit 1
+  fi
+  echo "."
+  count=$(($count+1))
+  sleep 20
+done
+SCRIPT
+
 happy_dance = <<SCRIPT
 cat << 'EOF'
 
@@ -841,7 +860,7 @@ cat << 'EOF'
 #          IBM Cloud Private community edition installation complete!         #
 #                  The web console is now available at:                       #
 #                                                                             #
-#                          https://#{base_segment}.100:8443                         #
+#                          https://#{base_segment}.100:8443                        #
 #                   default username/password is admin/admin                  #
 #                                                                             #
 #                          Documentation available at:                        #
@@ -944,6 +963,7 @@ Vagrant.configure(2) do |config|
     icp.vm.provision "shell", privileged: false, inline: install_helm, keep_color: true, name: "install_helm"
     icp.vm.provision "shell", privileged: false, inline: install_startup_script, keep_color: true, name: "install_startup_script"
     icp.vm.provision "shell", privileged: false, inline: install_shellinabox, keep_color: true, name: "install_shellinabox"
+    icp.vm.provision "shell", privileged: false, inline: ensure_services_up, keep_color: true, name: "ensure_services_up"
     icp.vm.provision "shell", privileged: false, inline: happy_dance, keep_color: true, name: "happy_dance"
   end
 end

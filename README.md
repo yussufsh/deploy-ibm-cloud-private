@@ -10,8 +10,7 @@ Instructions:
 #### Requirements
 In order to successfully run the `Vagrantfile` your laptop will need the following:
 
- - 4GiB of RAM
-   -  8GiB of RAM will give better performance
+ - 8GiB of RAM
    -  Change the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`
  - 20GiB of free disk space
  - VirtualBox 5.1.28 [Download](https://www.virtualbox.org/wiki/Downloads)
@@ -56,7 +55,10 @@ This `Vagrantfile` will stand up a single [VirtualBox](https://www.virtualbox.or
 If you see the addresses `192.168.56.101` or `192.168.56.102` for either `cfc-worker1` or `cfc-worker2` that means there was a conflicting network segment for the `192.168.27.x` network on your system. You will need to change the `base_segment` value in the `Vagrantfile` to a value that will not overlap any existing segments on your machine. See the comments in the `Vagrantfile` for [examples](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L24-L28)
 
 #### Web/Kube Dashboard Showing 3X Amount of Memory/CPU than I have on My Laptop
-Because we are using `lxc` containers to run the `cfc-worker1` and `cfc-worker2` nodes you will see the IBM Cloud Private community edition Dashboard report 3x as much memory availble in your cluster than you allocated via the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`. Don't worry, this is normal.  `LXD` is sharing the total memory available to the VirtualBox VM with each `lxc` instance so the amount of memory you see being reported in the IBM Cloud Private community edition console is a result of each node reporting that it has the amount of `memory` allocated to the VirtualBox host in the `memory` setting. The best way to think about how `lxc` instances share host resources is to think of `lxc` instances as being applications that run on your laptop where each `lxc` instance is an application and the host where the `lxc` instances are running is the laptop. Each `lxc` instance can request memory or cpu from the host as needed and return those resources when they are no longer needed just like running multiple applications on your laptop does.  
+Because we are using `lxc` containers to run the `cfc-worker1` and `cfc-worker2` nodes you will see the IBM Cloud Private community edition Dashboard report 3x as much memory availble in your cluster than you allocated via the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`. Don't worry, this is normal.  `LXD` is sharing the total memory available to the VirtualBox VM with each `lxc` instance so the amount of memory you see being reported in the IBM Cloud Private community edition console is a result of each node reporting that it has the amount of `memory` allocated to the VirtualBox host in the `memory` setting. The best way to think about how `lxc` instances share host resources is to think of `lxc` instances as being applications that run on your laptop where each `lxc` instance is an application and the host where the `lxc` instances are running is the laptop. Each `lxc` instance can request memory or cpu from the host as needed and return those resources when they are no longer needed just like running multiple applications on your laptop does. 
+
+#### Web Terminal
+For those of you running vagrant on windows, without access to a true terminal, we have included shellinabox to make accessing the terminal console of the VM easier. Just point your browser to [https://192.168.27.100:4200](https://192.168.27.100:4200) and login with username/password `vagrant`/`vagrant`. 
 
 #### Advanced Cache Setup  
 If you find yourself running this Vagrant setup multiple times it might be a good idea to setup a _pass-through_ proxy cache server for both the `apt-get` package installs as well as the `docker pull` calls. We've made it easy for you to setup a cache server.  In the same directory as the `Vagrantfile` there is a file called `Cachefile`.  The `Cachefile` is another Vagrant file that is configured to stand up an _apt-cacher-ng_ server as well as a _docker registry_ server. You can run it with:  
