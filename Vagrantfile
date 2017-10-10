@@ -31,10 +31,13 @@ base_segment = '192.168.27'
 federation_enabled = 'false'
 
 # enable the metering service
+# only used if version < 2.1.0-beta-3 see disabled_management_services below
 metering_enabled = 'true'
 
 # disabled mgmt services list
-# disabling vulnerability advisor by default in beta
+# "va" turns off vulnerability advisor
+# "metering" turns off prometheus and grafana metering
+# add "metering" from list below to turn off metering
 disabled_management_services = '[“va”]'
 
 # use apt-cacher-ng & docker registry cache servers
@@ -59,6 +62,9 @@ cfc_hosts = "
 
 [proxy]
 #{base_segment}.100
+
+[management]
+#{base_segment}.111
 "
 
 cfc_config = "
@@ -100,8 +106,6 @@ metering_enabled: false
 
 # disabled mgmt services list
 disabled_management_services: #{disabled_management_services}
-
-kubelet_extra_args: [\"--cgroup-driver=cgroupfs\"]
 
 # following variables are used to pickup internal builds
 version: latest
@@ -466,7 +470,7 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
   - name: cfc-worker1
     config: 
       boot.autostart.delay: 15
-      boot.autostart.priority: 1
+      boot.autostart.priority: 2
       user.meta-data: |
         hostname: cfc-worker1
         fqdn: cfc-worker1.icp
@@ -482,7 +486,7 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
   - name: cfc-worker2
     config: 
       boot.autostart.delay: 15
-      boot.autostart.priority: 2
+      boot.autostart.priority: 3
       user.meta-data: |
         hostname: cfc-worker2
         fqdn: cfc-worker2.icp
@@ -495,6 +499,22 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         type: nic
         mtu: 9000
         ipv4.address: #{base_segment}.102
+  - name: cfc-manager1
+    config: 
+      boot.autostart.delay: 15
+      boot.autostart.priority: 1
+      user.meta-data: |
+        hostname: cfc-manager1
+        fqdn: cfc-manager1.icp
+        manage_etc_hosts: true
+    devices:
+      eth0: 
+        name: eth0
+        nictype: bridged
+        parent: lxdbr0
+        type: nic
+        mtu: 9000
+        ipv4.address: #{base_segment}.111
 EOF
 sudo sed -i 's/127.0.0.1\tmaster.icp/#{base_segment}.100\tmaster.icp/g' /etc/hosts
 sudo ifconfig enp0s3 mtu 9000
@@ -526,6 +546,7 @@ sed -i "s|docker_password\: placeholder|docker_password\: #{docker_password}|g" 
 SCRIPT
 
 boot_lxd_worker_nodes = <<SCRIPT
+lxc launch -p default -p cfc-manager1 ubuntu:16.04 cfc-manager1
 lxc launch -p default -p cfc-worker1 ubuntu:16.04 cfc-worker1
 lxc launch -p default -p cfc-worker2 ubuntu:16.04 cfc-worker2
 SCRIPT
@@ -536,7 +557,8 @@ echo "Preparing nodes for IBM Cloud Private community edition cluster installati
 echo "This process will take approximately 10-20 minutes depending on network speeds."
 echo "Take a break and go grab a cup of coffee, we'll keep working on this while you're away ;-)"
 echo ""
-FILES="/home/vagrant/cluster/cfc-worker1
+FILES="/home/vagrant/cluster/cfc-manager1
+/home/vagrant/cluster/cfc-worker1
 /home/vagrant/cluster/cfc-worker2"
 for file in $FILES
 do
@@ -551,6 +573,7 @@ done
 echo "master.icp\t\t\t ready"
 echo "cfc-worker1.icp\t\t ready"
 echo "cfc-worker2.icp\t\t ready"
+echo "cfc-manager1.icp\t\t ready"
 SCRIPT
 
 docker_login = <<SCRIPT
@@ -765,7 +788,6 @@ sudo iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
 sudo ip link set dev enp0s8 up
 echo "nameserver #{base_segment}.100" | sudo tee /etc/resolv.conf > /dev/null
 echo "search icp" | sudo tee --append /etc/resolv.conf > /dev/null
-sudo curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -s 'http://bit.ly/2jUtgeN' > /dev/null || true
 EOF
 sudo chmod 744 /usr/local/bin/icp-ce-startup.sh
 
@@ -782,7 +804,6 @@ EOF
 sudo chmod 644 /etc/systemd/system/icp-ce-startup.service
 sudo systemctl daemon-reload
 sudo systemctl enable icp-ce-startup.service
-curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -s 'http://bit.ly/2fqp98V' > /dev/null || true
 SCRIPT
 
 install_shellinabox = <<SCRIPT
@@ -794,15 +815,21 @@ echo "Waiting for all IBM Cloud Private Services to start..."
 count=0
 while [[ '' != $(kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running) ]]
 do
-  if [ "50" -lt "$count" ]; then
-  	echo "Failed to start all IBM Cloud Private Services..."
-  	kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running
-    exit 1
+  if [ "90" -lt "$count" ]; then
+  	echo "The following services are still not available after 30 minutes..."
+  	kubectl get pods --namespace kube-system | grep -v Running
   fi
-  echo "."
   count=$(($count+1))
+  echo "."
   sleep 20
 done
+if [ "90" -gt "$count" ]; then
+	echo "All IBM Cloud Private Services have been successfully started..."
+	kubectl get pods --namespace kube-system &> kube-system-services.list
+	cat kube-system-services.list
+	rm -f kube-system-services.list
+fi
+curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -s 'http://bit.ly/2fqp98V' > /dev/null || true
 SCRIPT
 
 happy_dance = <<SCRIPT
