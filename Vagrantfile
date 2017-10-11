@@ -188,13 +188,13 @@ SCRIPT
 
 configure_swap_space = <<SCRIPT
 sudo rm -f /mnt/swap
-sudo fallocate -l 4g /mnt/swap
+sudo fallocate -l 8g /mnt/swap
 sudo chmod 600 /mnt/swap
 sudo mkswap /mnt/swap
 sudo swapon /mnt/swap
 echo "/mnt/swap swap swap defaults 0 0" | sudo tee --append /etc/fstab > /dev/null
-echo "vm.swappiness = 40" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "vm.vfs_cache_pressure = 50" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "vm.swappiness = 60" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "vm.vfs_cache_pressure = 10" | sudo tee --append /etc/sysctl.conf > /dev/null
 sudo sysctl -p
 SCRIPT
 
@@ -590,8 +590,8 @@ echo "This may take a few minutes depending on your connection speed and reliabi
 echo "Pre-caching docker images...."
 echo "Pulling #{image_repo}/icp-inception:#{version}..."
 docker pull #{image_repo}/icp-inception:#{version} &> /dev/null
-echo "Pulling #{image_repo}/icp-cloudantdb:#{version}..."
-docker pull #{image_repo}/cloudantdb:#{version} &> /dev/null
+echo "Pulling #{image_repo}/icp-datastore:#{version}..."
+docker pull #{image_repo}/icp-datastore:#{version} &> /dev/null
 echo "Pulling #{image_repo}/icp-platform-auth:#{version}..."
 docker pull #{image_repo}/icp-platform-auth:#{version} &> /dev/null
 echo "Pulling #{image_repo}/icp-auth:#{version}..."
@@ -937,7 +937,7 @@ Vagrant.configure(2) do |config|
     icp.vm.provider "virtualbox" do |virtualbox|
       virtualbox.name = "#{vm_name}"
       virtualbox.gui = false
-      virtualbox.customize ["modifyvm", :id, "--ioapic", "off"] # turn off I/O APIC
+      virtualbox.customize ["modifyvm", :id, "--ioapic", "on"] # turn off I/O APIC
       virtualbox.customize ["modifyvm", :id, "--cpus", "#{cpus}"] # set number of vcpus
       virtualbox.customize ["modifyvm", :id, "--memory", "#{memory}"] # set amount of memory allocated vm memory
       virtualbox.customize ["modifyvm", :id, "--ostype", "Ubuntu_64"] # set guest OS type
