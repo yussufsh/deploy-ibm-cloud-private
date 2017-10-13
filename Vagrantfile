@@ -122,6 +122,7 @@ user_home_path = ENV['HOME']
 if Vagrant::Util::Platform.windows?
   user_home_path = Vagrant::Util::Platform.fs_real_path(ENV['USERPROFILE'])
 end
+base_storage_disk_path = Vagrant::Util::Platform.fs_real_path("#{user_home_path}/VirtualBox VMs/#{vm_name}/ubuntu-16.04-amd64-disk001.vmdk")
 lxd_storage_disk_path = Vagrant::Util::Platform.fs_real_path("#{user_home_path}/VirtualBox VMs/#{vm_name}/lxd_storage_disk.vmdk")
 extra_storage_disk_path = Vagrant::Util::Platform.fs_real_path("#{user_home_path}/VirtualBox VMs/#{vm_name}/nfs_storage_disk.vmdk")
 rsa_private_key = IO.read(Vagrant::Util::Platform.fs_real_path("#{Vagrant.user_data_path}/insecure_private_key"))
@@ -818,6 +819,7 @@ do
   if [ "90" -lt "$count" ]; then
   	echo "The following services are still not available after 30 minutes..."
   	kubectl get pods --namespace kube-system | grep -v Running
+  	exit
   fi
   count=$(($count+1))
   echo "."
@@ -937,11 +939,15 @@ Vagrant.configure(2) do |config|
     icp.vm.provider "virtualbox" do |virtualbox|
       virtualbox.name = "#{vm_name}"
       virtualbox.gui = false
-      virtualbox.customize ["modifyvm", :id, "--ioapic", "on"] # turn off I/O APIC
+      virtualbox.customize ["modifyvm", :id, "--apic", "on"] # turn on I/O APIC
+      virtualbox.customize ["modifyvm", :id, "--ioapic", "on"] # turn on I/O APIC
+      virtualbox.customize ["modifyvm", :id, "--x2apic", "on"] # turn on I/O APIC
+      virtualbox.customize ["modifyvm", :id, "--biosapic", "x2apic"] # turn on I/O APIC
       virtualbox.customize ["modifyvm", :id, "--cpus", "#{cpus}"] # set number of vcpus
       virtualbox.customize ["modifyvm", :id, "--memory", "#{memory}"] # set amount of memory allocated vm memory
       virtualbox.customize ["modifyvm", :id, "--ostype", "Ubuntu_64"] # set guest OS type
       virtualbox.customize ["modifyvm", :id, "--natdnshostresolver1", "on"] # enables DNS resolution from guest using host's DNS
+      virtualbox.customize ["modifyvm", :id, "--natdnsproxy1", "on"] # enables DNS requests to be proxied via the host
       virtualbox.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"] # turn on promiscuous mode on nic 2
       virtualbox.customize ["modifyvm", :id, "--nictype1", "virtio"]
       virtualbox.customize ["modifyvm", :id, "--nictype2", "virtio"]
@@ -967,14 +973,16 @@ Vagrant.configure(2) do |config|
       virtualbox.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 1000 ] # at 1 second drift, the time will be set and not "smoothly" adjusted 
       virtualbox.customize ['modifyvm', :id, '--cableconnected1', 'on'] # fix for https://github.com/mitchellh/vagrant/issues/7648
       virtualbox.customize ['modifyvm', :id, '--cableconnected2', 'on'] # fix for https://github.com/mitchellh/vagrant/issues/7648
+      virtualbox.customize ['storagectl', :id, '--name', 'SATA Controller', '--hostiocache', 'on'] # use host I/O cache
+      virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 0, '--device', 0, '--type', 'hdd', '--nonrotational', 'on', '--medium', "#{base_storage_disk_path}"]
       if !File.exists?("#{extra_storage_disk_path}")
-        virtualbox.customize ['createhd', '--filename', "#{extra_storage_disk_path}", '--size', 500 * 1024]
+        virtualbox.customize ['createhd', '--filename', "#{extra_storage_disk_path}", '--format', 'VMDK', '--size', 500 * 1024]
       end
       if !File.exists?("#{lxd_storage_disk_path}")
-        virtualbox.customize ['createhd', '--filename', "#{lxd_storage_disk_path}", '--size', 500 * 1024]
+        virtualbox.customize ['createhd', '--filename', "#{lxd_storage_disk_path}", '--format', 'VMDK', '--size', 500 * 1024]
       end
-      virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', "#{extra_storage_disk_path}"]
-      virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', "#{lxd_storage_disk_path}"]
+      virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--nonrotational', 'on', '--medium', "#{extra_storage_disk_path}"]
+      virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--nonrotational', 'on', '--medium', "#{lxd_storage_disk_path}"]
     end
 
     icp.vm.provision "shell", privileged: false, inline: configure_icp_install, keep_color: true, name: "configure_icp_install"
