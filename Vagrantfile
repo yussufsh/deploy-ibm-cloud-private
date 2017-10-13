@@ -38,7 +38,7 @@ metering_enabled = 'true'
 # "va" turns off vulnerability advisor
 # "metering" turns off prometheus and grafana metering
 # add "metering" from list below to turn off metering
-disabled_management_services = '[“va”]'
+disabled_management_services = '["va"]'
 
 # use apt-cacher-ng & docker registry cache servers
 # see instructions in the `README.md` under #Advanced Cache Setup
