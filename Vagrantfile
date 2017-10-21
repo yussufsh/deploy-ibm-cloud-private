@@ -19,7 +19,7 @@ cpus = '4'
 memory = '8192'
 
 # Update version to pull a specific version i.e. version = '2.1.0-beta-1'
-version = "2.1.0-beta-3"
+version = "2.1.0"
 
 # host-only network segment - in most cases you do not have to change this value
 # on some systems this network segment may overlap another network already on your
@@ -37,8 +37,8 @@ metering_enabled = 'true'
 # disabled mgmt services list
 # "va" turns off vulnerability advisor
 # "metering" turns off prometheus and grafana metering
-# add "metering" from list below to turn off metering
-disabled_management_services = '["va"]'
+# "monitoring"  turns off monitoring services
+disabled_management_services = '["va","metering","monitoring"]'
 
 # use apt-cacher-ng & docker registry cache servers
 # see instructions in the `README.md` under #Advanced Cache Setup
@@ -54,17 +54,17 @@ docker_registry_port = '5000'
 # the following hosts will be accessible from your laptop once provisioning is complete
 cfc_hosts = "
 [master]
-#{base_segment}.100
+#{base_segment}.100 kubelet_extra_args=[\"--image-gc-high-threshold=100\", \"--image-gc-low-threshold=100\", \"--cgroup-driver=systemd\"] kube_proxy_extra_args=[\"--proxy-mode=userspace\"]
 
 [worker]
-#{base_segment}.101
-#{base_segment}.102
+#{base_segment}.101 kubelet_extra_args=[\"--cgroup-driver=systemd\"] kube_proxy_extra_args=[\"--proxy-mode=userspace\"]
+#{base_segment}.102 kubelet_extra_args=[\"--cgroup-driver=systemd\"] kube_proxy_extra_args=[\"--proxy-mode=userspace\"]
 
 [proxy]
-#{base_segment}.100
+#{base_segment}.100 kubelet_extra_args=[\"--image-gc-high-threshold=100\", \"--image-gc-low-threshold=100\", \"--cgroup-driver=systemd\"] kube_proxy_extra_args=[\"--proxy-mode=userspace\"]
 
 [management]
-#{base_segment}.111
+#{base_segment}.111 kubelet_extra_args=[\"--image-gc-high-threshold=100\", \"--image-gc-low-threshold=100\", \"--cgroup-driver=systemd\"] kube_proxy_extra_args=[\"--proxy-mode=userspace\"]
 "
 
 cfc_config = "
@@ -571,6 +571,27 @@ do
     sleep 10
   done
 done
+
+# sanity check (eth0 should be assigned on all 3 lxc nodes)
+if [ "3" -gt "$(lxc list | grep -o eth0 | wc -l)" ]; then
+    echo "Failed to assign IP to lxc nodes..."
+    lxc exec cfc-manager1 -- cat /var/log/cloud-init-output.log | grep -C 3 error
+    lxc exec cfc-worker1 -- cat /var/log/cloud-init-output.log | grep -C 3 error
+    lxc exec cfc-worker2 -- cat /var/log/cloud-init-output.log | grep -C 3 error
+    echo "You may need to change the 'base_segment' value in the 'Vagrantfile' to another subnet like '192.168.56'."
+    exit 1
+fi
+
+# sanity check (docker0 should be assigned on all 3 lxc nodes)
+if [ "3" -gt "$(lxc list | grep -o docker0 | wc -l)" ]; then
+    echo "Failed to install docker on lxc nodes..."
+    lxc exec cfc-manager1 -- cat /var/log/cloud-init-output.log | grep -C 3 error
+    lxc exec cfc-worker1 -- cat /var/log/cloud-init-output.log | grep -C 3 error
+    lxc exec cfc-worker2 -- cat /var/log/cloud-init-output.log | grep -C 3 error
+    echo "You may need to change the 'base_segment' value in the 'Vagrantfile' to another subnet like '192.168.56'."
+    exit 1
+fi
+
 echo "master.icp\t\t\t ready"
 echo "cfc-worker1.icp\t\t ready"
 echo "cfc-worker2.icp\t\t ready"
@@ -789,6 +810,7 @@ sudo iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
 sudo ip link set dev enp0s8 up
 echo "nameserver #{base_segment}.100" | sudo tee /etc/resolv.conf > /dev/null
 echo "search icp" | sudo tee --append /etc/resolv.conf > /dev/null
+sudo docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm
 EOF
 sudo chmod 744 /usr/local/bin/icp-ce-startup.sh
 
@@ -812,6 +834,7 @@ sudo apt-get install -y shellinabox &> /dev/null
 SCRIPT
 
 ensure_services_up = <<SCRIPT
+sleep 30
 echo "Waiting for all IBM Cloud Private Services to start..."
 count=0
 while [[ '' != $(kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running) ]]
@@ -998,7 +1021,7 @@ Vagrant.configure(2) do |config|
     icp.vm.provision "shell", privileged: false, inline: install_helm, keep_color: true, name: "install_helm"
     icp.vm.provision "shell", privileged: false, inline: install_startup_script, keep_color: true, name: "install_startup_script"
     icp.vm.provision "shell", privileged: false, inline: install_shellinabox, keep_color: true, name: "install_shellinabox"
-    icp.vm.provision "shell", privileged: false, inline: ensure_services_up, keep_color: true, name: "ensure_services_up"
+    icp.vm.provision "shell", privileged: false, inline: ensure_services_up, keep_color: true, name: "ensure_services_up", run: "always"
     icp.vm.provision "shell", privileged: false, inline: happy_dance, keep_color: true, name: "happy_dance"
   end
 end
