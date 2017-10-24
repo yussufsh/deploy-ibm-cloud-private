@@ -15,7 +15,7 @@ In order to successfully run the `Vagrantfile` your laptop will need the followi
    -  8GiB will give better performance  
    -  Change the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile`
  - 20GiB of free disk space
- - VirtualBox 5.1.28 [Download](https://www.virtualbox.org/wiki/Downloads)
+ - VirtualBox 5.1.28 [Download](https://www.virtualbox.org/wiki/Download_Old_Builds_5_1) - VirtualBox 5.2 is not yet supported by Vagrant
  - Vagrant 2.0.0 [Download](https://www.vagrantup.com/downloads.html)
  - Operating Systems
    - Mac OSx 10.12.6
