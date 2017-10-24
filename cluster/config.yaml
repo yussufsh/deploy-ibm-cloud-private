@@ -7,9 +7,9 @@ ansible_user: root
 mesos_enabled: false
 install_docker_py: true
 
-sl_datacenter: dal09
+sl_datacenter: dal10
 sl_ssh_key: 967877
-sl_vlan: 1919743
+#sl_vlan: 1919743
 
 sl_icp_masters:
   - icp-master01
