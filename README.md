@@ -207,6 +207,7 @@ PLAY RECAP *********************************************************************
 169.46.198.216             : ok=8    changed=6    unreachable=0    failed=0   
 ```
 
+_Note: Sometimes this last task will error due to a strange dnsmasq issue. Running the playbook again usually fixes it, sometimes you need to restart dnsmasq (again) on the master node._
 
 Once that playbook has finished running we can use our modified deployer to deploy ICP (the final line in the previous command will give you the command syntax, you just need to plug in your SL credentials)
 
