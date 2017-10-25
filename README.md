@@ -1,4 +1,4 @@
-# Deploy IBM Cloud Private beta
+# Deploy IBM Cloud Private
 
 Instructions:
 * [Deploy in local VMs using Vagrant](#deploy-using-vagrant)
