@@ -33,7 +33,7 @@ $ cd deploy-ibm-cloud-private
 
 #### IBM Cloud Private Vagrant Commands
 **install**: `vagrant up`  
-**stop**: `vagrant halt`  
+**stop**: `vagrant halt` (DO NOT USE TEMPORARILY, USE `vagrant suspend` TO HALT VM)  
 **start**: `vagrant up`  
 **uninstall**: `vagrant destroy`  
 **login to master node**: `vagrant ssh`  
