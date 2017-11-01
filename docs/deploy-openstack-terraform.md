@@ -57,3 +57,5 @@ Instructions
 * If you're using this for anything beyond a proof-of-concept, please also take
   the added step of setting *insecure=false* and set the *cacert* option to the
   contents of the OpenStack certificate
+
+See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for next steps.
