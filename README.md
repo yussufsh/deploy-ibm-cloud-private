@@ -43,8 +43,3 @@ NAME             STATUS                     AGE       VERSION
 ```
 
 From here you should be able to interact with ICP via either the Web UI or the `kubectl` command.
-
-## deploy-using-openstack-and-terraform
-
-Please refer to the embedded README document in *terraform/openstack*
-for detailed deployment steps.
