@@ -1,5 +1,8 @@
 ## Deploy IBM Cloud Private beta on IBM Cloud (softlayer) with Ansible
 
+_Note: While this installation method should work, future development is deprecated
+in favor of the [terraform install](deploy-softlayer-terraform.md) method._
+
 ### Prepare your local machine:
 
 The first thing you need to do is to clone this repo down and set up to use softlayer cli and ansible:
