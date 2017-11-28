@@ -34,7 +34,7 @@
     ca-certificates \
     curl \
     software-properties-common
-# Add docker GPG key
+# Add Docker GPG key
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 # Add the repo
 /usr/bin/add-apt-repository \

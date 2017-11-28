@@ -53,7 +53,7 @@ Instructions
   access your ICP cluster at https://<ICP_MASTER_IP_ADDRESS>:8443
 * If you're using this for anything beyond a proof-of-concept, please also take
   the added step of setting the **insecure=false** variable in the **main.tf**
-  openstack provider, and the OS_CACERT environment variable.
+  OpenStack provider, and the OS_CACERT environment variable.
   (https://www.terraform.io/docs/providers/openstack/#ca_certfile)
 
 See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for next steps.
