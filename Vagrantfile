@@ -353,7 +353,7 @@ networks:
       bridge.mode: standard
       ipv4.address: "#{base_segment}.100/24"
       ipv4.dhcp: true
-      ipv4.dhcp.ranges: "#{base_segment}.99-#{base_segment}.254"
+      ipv4.dhcp.ranges: "#{base_segment}.100-#{base_segment}.254"
       ipv4.firewall: false
       ipv4.nat: true
       ipv4.routing: true
@@ -531,7 +531,7 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         type: nic
         ipv4.address: #{base_segment}.103
 EOF
-sudo sed -i 's/127.0.0.1\tmaster.icp/#{base_segment}.99\tmaster.icp/g' /etc/hosts
+sudo sed -i 's/127.0.0.1\tmaster.icp/#{base_segment}.100\tmaster.icp/g' /etc/hosts
 SCRIPT
 
 bring_up_icp_host_interface = <<SCRIPT
@@ -680,7 +680,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share01
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -694,7 +694,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share02
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -708,7 +708,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share03
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -722,7 +722,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share04
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -736,7 +736,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share05
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -750,7 +750,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share06
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -764,7 +764,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share07
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -778,7 +778,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share08
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -792,7 +792,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share09
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -806,7 +806,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share10
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -820,7 +820,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share11
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -834,7 +834,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share12
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -848,7 +848,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share13
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -862,7 +862,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share14
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -876,7 +876,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share15
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -890,7 +890,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share16
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -904,7 +904,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share17
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -918,7 +918,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share18
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -932,7 +932,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share19
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -946,7 +946,7 @@ spec:
    persistentVolumeReclaimPolicy: Recycle
    nfs:
       path: /storage/share20
-      server: #{base_segment}.99
+      server: #{base_segment}.100
 EOF
 kubectl create -f /home/vagrant/volumes.yaml
 SCRIPT
@@ -966,7 +966,7 @@ sudo bash -c 'cat > /usr/local/bin/icp-ce-startup.sh' <<'EOF'
 
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 sudo ip link set dev eth1 up
-echo "nameserver #{base_segment}.99" | sudo tee /etc/resolv.conf > /dev/null
+echo "nameserver #{base_segment}.100" | sudo tee /etc/resolv.conf > /dev/null
 echo "search icp" | sudo tee --append /etc/resolv.conf > /dev/null
 sudo docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm > /dev/null || true
 sleep 180
@@ -974,13 +974,11 @@ kubectl config set-credentials icpadmin --username=admin --password=admin &> /de
 kubectl config set-cluster icp --server=http://127.0.0.1:8888 --insecure-skip-tls-verify=true &> /dev/null
 kubectl config set-context icp --cluster=icp --user=admin  --namespace=default &> /dev/null
 kubectl config use-context icp &> /dev/null
-if $(kubectl get pods -o wide -n kube-system | grep "icp-ds" | awk -F' ' '{print $6}' | xargs ping -c 1 -n | grep -q Invalid); then
-  kubectl get pods -o wide -n kube-system | grep "icp-ds" | cut -d ' ' -f 1 | xargs kubectl -n kube-system delete pods --grace-period=0 --force
-  sleep 60
-fi
+kubectl get pods -o wide -n kube-system | grep "icp-ds" | cut -d ' ' -f 1 | xargs kubectl -n kube-system delete pods
+sleep 60
 while [[ '' != $(kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running) ]]
 do
-  kubectl get pods -o wide -n kube-system | grep "CrashLoopBackOff\|Init" | cut -d ' ' -f 1 | xargs kubectl -n kube-system delete pods --grace-period=0 --force
+  kubectl get pods -o wide -n kube-system | grep "CrashLoopBackOff\|Init" | cut -d ' ' -f 1 | xargs kubectl -n kube-system delete pods
   sleep 120
 done
 EOF
