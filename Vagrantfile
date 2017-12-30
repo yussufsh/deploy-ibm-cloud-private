@@ -978,10 +978,6 @@ kubectl get pods -o wide -n kube-system | grep "icp-ds" | cut -d ' ' -f 1 | xarg
 sleep 120
 while [[ '' != $(kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running) ]]
 do
-  kubectl config set-credentials icpadmin --username=admin --password=admin &> /dev/null
-  kubectl config set-cluster icp --server=http://127.0.0.1:8888 --insecure-skip-tls-verify=true &> /dev/null
-  kubectl config set-context icp --cluster=icp --user=admin  --namespace=default &> /dev/null
-  kubectl config use-context icp &> /dev/null
   kubectl get pods -o wide -n kube-system | grep "CrashLoopBackOff\\|Init" | cut -d ' ' -f 1 | xargs kubectl -n kube-system delete pods
   sleep 120
 done
