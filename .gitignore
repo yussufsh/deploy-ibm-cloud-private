@@ -10,6 +10,6 @@ cluster/ssh_key.pub
 
 
 # terraform
-.tfstate
-.backup
-.terraform*
+*.tfstate
+*.backup
+*.terraform*
