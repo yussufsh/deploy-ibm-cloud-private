@@ -16,6 +16,7 @@ editor and update the following variables to suit your environment:
 * key_name
 * key_file
 * datacenter
+* public and private vlan
 
 _Make sure the private key that matches your `key_name` is added to your ssh-agent._
 
