@@ -12,35 +12,38 @@ You will need to collect some information from the Softlayer admin page before y
 
 _Softlayer username and API key_
 
-Go to the [Softlayer Control page](https://control.softlayer.com/)
-Look at the top right and note which account you're logged in as.  You may have more than one account. IBMers will likely have at least a default personal account and an account from their organization. Pick one that has rights to provision capacity in Softlayer.
-Now go [edit your user profile](https://control.softlayer.com/account/user/profile).
-Scroll down to the bottom and look for the section _API Access Information_
-You will have an "API Username" "Authentication key". The "API Username" will be something like 9999999_shortname@us.ibm.com.
-Copy both of these values into a local text file.  You will need them when you configure the Terraform script.  If you don't have an API, [follow these instructions](https://knowledgelayer.softlayer.com/procedure/generate-api-key)
-Next, go look at your [devices in Softlayer](https://control.softlayer.com/devices)
-Pick a device and look at the details.
-Halfway down the list of details, you will see the _Network_ section in two columns. The public subnet VLAN is on the left, the private subnet VLAN is on the right.
-The subnet will have a name like `wdc01.fcr05a.918`. The first substring identifies the data center. In this case it's data center 01 in Washington DC. Take note of that data center identified and store it in the same place where you put you Softlayer user ID and API key.
-Next, _click_ on the public VLAN link.  You'll go to a page such as [https://control.softlayer.com/network/vlans/2262109](https://control.softlayer.com/network/vlans/2262109)
-That long number at the end of the URL is the public VLAN ID. Record that number.
-Click the Back button on your browser to get back to the device summary page.
-Click on the private VLAN link and perform the same data collection.
-Record the ID of the private VLAN
-You should now have your Softlayer user ID, API key, data center ID, public VLAN ID, and private VLAN ID.
-You're done with the Softlayer admin page. Go ahead and close the browser.
-Go back to the a command line and change directory to where you cloned the git repository.
-The root of the git repo is `deploy-ibm-cloud-private`. From there, cd to `terraform/ibmcloud`
-Now you will create an ssh key pair and register it with Softlayer.
-The name you give the key in Softlayer has to be unique. This can be tricky if you are using a shared account.  You can't just call it `ssh-key`.
-For now, use your IBM shortname to make the key ID unique. For the following steps, replace _shortname_ with your own actual shortname.
-On the command line, enter:
+* Go to the [Softlayer Control page](https://control.softlayer.com/)
+* Look at the top right and note which account you're logged in as.  You may have more than one account. IBMers will likely have at least a default personal account and an account from their organization. Pick one that has rights to provision capacity in Softlayer.
+* Now go [edit your user profile](https://control.softlayer.com/account/user/profile).
+* Scroll down to the bottom and look for the section _API Access Information_
+* You will have an "API Username" "Authentication key". The "API Username" will be something like 9999999_shortname@us.ibm.com.
+* Copy both of these values into a local text file.  You will need them when you configure the Terraform script.  If you don't have an API, [follow these instructions](https://knowledgelayer.softlayer.com/procedure/generate-api-key)
+* Next, go look at your [devices in Softlayer](https://control.softlayer.com/devices)
+* Pick a device and look at the details.
+* Halfway down the list of details, you will see the _Network_ section in two columns. The public subnet VLAN is on the left, the private subnet VLAN is on the right.
+* The subnet will have a name like `wdc01.fcr05a.918`. The first substring identifies the data center. In this case it's data center 01 in Washington DC. Take note of that data center identified and store it in the same place where you put you Softlayer user ID and API key.
+* Next, _click_ on the public VLAN link.  You'll go to a page such as [https://control.softlayer.com/network/vlans/2262109](https://control.softlayer.com/network/vlans/2262109)
+* That long number at the end of the URL is the public VLAN ID. Record that number.
+* Click the Back button on your browser to get back to the device summary page.
+* Click on the private VLAN link and perform the same data collection.
+* Record the ID of the private VLAN
+* You should now have your Softlayer user ID, API key, data center ID, public VLAN ID, and private VLAN ID.
+* You're done with the Softlayer admin page. Go ahead and close the browser.
+
+_SSH Keys_
+
+* Go back to the a command line and change directory to where you cloned the git repository.
+* The root of the git repo is `deploy-ibm-cloud-private`. From there, cd to `terraform/ibmcloud`
+* Now you will create an ssh key pair and register it with Softlayer.
+* The name you give the key in Softlayer has to be unique. This can be tricky if you are using a shared account.  You can't just call it `ssh-key`.
+* For now, use your IBM shortname to make the key ID unique. For the following steps, replace _shortname_ with your own actual shortname.
+* On the command line, enter:
 `ssh-keygen -f shortname_ssh_key -P ""`
-You will end up with two files in the current directory, `shortname_ssh_key` (the private key) and `shortname_ssh_key.pub` (the public key)
-Next, you'll register the public key with Softlayer by executing:
+* You will end up with two files in the current directory, `shortname_ssh_key` (the private key) and `shortname_ssh_key.pub` (the public key)
+* Next, you'll register the public key with Softlayer by executing:
 `slcli sshkey add -f shortname_ssh_key.pub shortname_ssh_key`
-Assuming you're successful, you should see a message saying `SSH key added` followed by the hex signature.
-Finally, you will take all of the above information and put it into the `variables.tf` file. Populate the fields as per this table:
+* Assuming you're successful, you should see a message saying `SSH key added` followed by the hex signature.
+* Finally, you will take all of the above information and put it into the `variables.tf` file. Populate the fields as per this table:
 
 variable name | data
 --------------|-------------
