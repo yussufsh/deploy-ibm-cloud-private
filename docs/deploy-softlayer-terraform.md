@@ -54,7 +54,7 @@ slcli sshkey add -f shortname_ssh_key.pub shortname_ssh_key
 variable name | data
 --------------|-------------
 sl_username |  API Username
-sl_api_key | Auethntication key
+sl_api_key | Authentication key
 key_name  | shortname_ssh_key
 key_file | full path to the private key file
 datacenter  | data center ID, e.g. wdc01
