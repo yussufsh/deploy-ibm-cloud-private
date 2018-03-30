@@ -97,3 +97,11 @@ variable "icp_download_location" {
     description = "HTTP wget location for ICP Enterprise Edition - ignored for community edition"
     default = "http://LOCATION_OF_ICP_ENTERPRISE_EDITION.tar.gz"
 }
+
+variable "icp_disabled_services" {
+    type = "list"
+    description = "List of ICP services to disable"
+    default = [
+	"va"
+    ]
+}
