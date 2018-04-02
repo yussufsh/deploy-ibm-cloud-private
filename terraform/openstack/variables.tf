@@ -100,7 +100,7 @@ variable "icp_download_location" {
 
 variable "icp_disabled_services" {
     type = "list"
-    description = "List of ICP services to disable"
+    description = "List of ICP services to disable (e.g., va, monitoring or metering)"
     default = [
 	"va"
     ]
