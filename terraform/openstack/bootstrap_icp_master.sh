@@ -100,6 +100,12 @@ done
 if [ -n "${install_user_password}" ]; then
     /bin/sed -i 's/.*ansible_become_password:.*/ansible_become_password: "'${install_user_password}'"/g' cluster/config.yaml
 fi
+if [ -n "${icp_disabled_services}" ]; then
+	/bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ ${icp_disabled_services} ]/g' cluster/config.yaml
+else
+	/bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
+
+fi
 
 # Setup the private key for the ICP cluster (injected at deploy time)
 /bin/cp /root/id_rsa.terraform \
