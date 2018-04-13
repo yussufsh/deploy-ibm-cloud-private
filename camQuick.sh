@@ -5,6 +5,21 @@
 # We assume NFS is already installed, configured and running
 # either run as root or as a sub-account with sudo configured for NOPASSWORD prompt
 # usage: ./camQuick.sh 192.168.27.100 admin admin 6e150616-blah-blah-blah-758b1bc1fe9e
+
+if [ $# -eq 0 ]; then
+echo "Usage: $0 masterIp user password dockerAPIkey";
+echo "";
+echo "eg, ./camQuick.sh 192.168.27.100 admin admin 6e150616-blah-blah-blah-758b1bc1fe9e";
+echo "";
+echo "all options are required";
+echo "masterIp = IP address of the ICP Master node";
+echo "user = admin should do fine";
+echo "username = admin user passsord, usually admin";
+echo "dockerAPIkey = your docker account API key generated from cloud.docker.com/swarm";
+echo "";
+exit 1;
+fi
+
 MASTER_IP=$1
 user_name=$2
 pass=$3
