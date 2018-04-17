@@ -33,7 +33,7 @@ resource "openstack_compute_keypair_v2" "icp-key-pair" {
 
 resource "openstack_compute_instance_v2" "icp-worker-vm" {
     count     = "${var.icp_num_workers}"
-    name      = "${format("icp-worker-${random_id.rand.hex}-%02d", count.index+1)}"
+    name      = "${format("${var.instance_prefix}-worker-${random_id.rand.hex}-%02d", count.index+1)}"
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_worker_node}"
     key_pair  = "${openstack_compute_keypair_v2.icp-key-pair.name}"
@@ -46,7 +46,7 @@ resource "openstack_compute_instance_v2" "icp-worker-vm" {
 }
 
 resource "openstack_compute_instance_v2" "icp-master-vm" {
-    name      = "icp-master-${random_id.rand.hex}"
+    name      = "${var.instance_prefix}-master-${random_id.rand.hex}"
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_master_node}"
     key_pair  = "${openstack_compute_keypair_v2.icp-key-pair.name}"
@@ -66,6 +66,7 @@ resource "openstack_compute_instance_v2" "icp-master-vm" {
     }
 
     user_data = "${data.template_file.bootstrap_init.rendered}"
+
 }
 
 data "template_file" "bootstrap_init" {

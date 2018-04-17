@@ -105,3 +105,8 @@ variable "icp_disabled_services" {
 	"va"
     ]
 }
+
+variable "instance_prefix" {
+    description = "Prefix to use in instance names"
+    default = "icp"
+}
