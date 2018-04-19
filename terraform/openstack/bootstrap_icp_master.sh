@@ -68,7 +68,6 @@ else
 fi
 
 # Ensure the hostnames are resolvable
-#IP=`/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'`
 IP=`/sbin/ip -4 -o addr show dev eth0 | awk '{split($4,a,"/");print a[1]}'`
 /bin/echo "$IP $(hostname)" >> /etc/hosts
 
