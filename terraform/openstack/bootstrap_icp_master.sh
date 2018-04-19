@@ -37,7 +37,7 @@ ICP_ROOT_DIR="/opt/ibm-cloud-private-${icp_edition}"
 
 # Now for distro dependent stuff
 if [ -f /etc/redhat-release ]; then
-#RHEL stuff
+#RHEL specific steps
 	# Disable the firewall
 	systemctl stop firewalld
 	systemctl disable firewalld
@@ -46,7 +46,7 @@ if [ -f /etc/redhat-release ]; then
 	systemctl start docker
 
 else 
-# Ubuntu stuff
+# Ubuntu specific steps
 
 	# Disable the firewall
 	/usr/sbin/ufw disable
