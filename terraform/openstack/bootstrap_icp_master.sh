@@ -63,6 +63,13 @@ else
     	curl \
     	software-properties-common
 
+	# Add Docker GPG key
+	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+	# Add the repo
+	/usr/bin/add-apt-repository \
+   		"deb https://download.docker.com/linux/ubuntu \
+   		$(lsb_release -cs) \
+   		stable"
 	/usr/bin/apt update
 	/usr/bin/apt-get --assume-yes install docker-ce python python-pip
 fi
