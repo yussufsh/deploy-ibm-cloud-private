@@ -531,7 +531,7 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         type: nic
         ipv4.address: #{base_segment}.103
 EOF
-sudo sed -i 's/127.0.0.1\tmaster.icp/#{base_segment}.100\tmaster.icp/g' /etc/hosts
+sudo sed -i 's/127.0...1\tmaster.icp/#{base_segment}.100\tmaster.icp/g' /etc/hosts
 SCRIPT
 
 bring_up_icp_host_interface = <<SCRIPT
