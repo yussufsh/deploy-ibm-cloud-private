@@ -1,20 +1,20 @@
 #!/bin/bash
 # CAM CE 2102 "online" install steps:-
 # THIS SCRIPT ONLY WORKS FOR LINUX
-# Run it on the ICP Master with kubectl configured
-# We assume NFS is already installed, configured and running
 # either run as root or as a sub-account with sudo configured for NOPASSWORD prompt
-# usage: ./camQuick.sh 192.168.27.100 admin admin 6e150616-blah-blah-blah-758b1bc1fe9e
+# usage: ./camQuick.sh 192.168.27.100 admin admin dockerUser docker@Email 6e150616-blah-blah-blah-758b1bc1fe9e
 
 if [ $# -eq 0 ]; then
-echo "Usage: $0 masterIp user password dockerAPIkey";
+echo "Usage: $0 masterIp user password dockeruser dockeremail dockerAPIkey";
 echo "";
-echo "eg, ./camQuick.sh 192.168.27.100 admin admin 6e150616-blah-blah-blah-758b1bc1fe9e";
+echo "eg, ./camQuick.sh 192.168.27.100 admin admin dockerUser docker@Email 6e150616-blah-blah-blah-758b1bc1fe9e";
 echo "";
 echo ".-=all options are required=-.";
 echo "masterIp = IP address of the ICP Master node";
 echo "user = admin should do fine";
 echo "username = admin user passsord, usually admin";
+echo "dockeruser = your docker username";
+echo "dockeremail = your docker account email address";
 echo "dockerAPIkey = your docker account API key generated from cloud.docker.com/swarm";
 echo "";
 exit 1;
@@ -23,7 +23,9 @@ fi
 MASTER_IP=$1
 user_name=$2
 pass=$3
-API_KEY=$4
+dockeruser=$4
+dockeremail=$5
+API_KEY=$6
 
 # pull kubectl and install
 echo "pull kubectl and install"
@@ -82,7 +84,7 @@ kubectl create -f ./cam-bpd-appdata-pv.yaml
 
 # create the docker API key secret in ICP and patch the service account to use it
 echo "create the docker API key secret in ICP and patch the service account to use it"
-kubectl create secret docker-registry cam --docker-username=berenss --docker-password=$API_KEY --docker-email=berenss@us.ibm.com -n services
+kubectl create secret docker-registry cam --docker-username=$dockeruser --docker-password=$API_KEY --docker-email=$dockeremail -n services
 kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "cam"}]}' --namespace=services
 
 # run the CAM CE deploy
