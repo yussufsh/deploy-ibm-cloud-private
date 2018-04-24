@@ -59,7 +59,7 @@ variable "openstack_network_name" {
 }
 
 variable "openstack_ssh_key_file" {
-    description = "The path to the private SSH key file"
+    description = "The path to the private SSH key file. Appending '.pub' indicates the public key filename"
     default = "<path to the private SSH key file>"
 }
 
