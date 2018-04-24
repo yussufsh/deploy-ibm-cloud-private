@@ -27,6 +27,7 @@ if [ -f /etc/redhat-release ]; then
         # Disable the firewall
         systemctl stop firewalld
         systemctl disable firewalld
+        # Make sure we're not running some old version of docker
         yum -y remove docker docker-engine docker.io
         yum -y install docker-ce
         systemctl start docker
