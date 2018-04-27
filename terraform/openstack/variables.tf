@@ -59,7 +59,7 @@ variable "openstack_network_name" {
 }
 
 variable "openstack_ssh_key_file" {
-    description = "The path to the private SSH key file"
+    description = "The path to the private SSH key file. Appending '.pub' indicates the public key filename"
     default = "<path to the private SSH key file>"
 }
 
@@ -104,4 +104,9 @@ variable "icp_disabled_services" {
     default = [
 	"va"
     ]
+}
+
+variable "instance_prefix" {
+    description = "Prefix to use in instance names"
+    default = "icp"
 }
