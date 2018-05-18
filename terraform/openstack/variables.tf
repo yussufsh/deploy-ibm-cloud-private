@@ -110,3 +110,8 @@ variable "instance_prefix" {
     description = "Prefix to use in instance names"
     default = "icp"
 }
+
+variable "docker_download_location" {
+    description = "HTTP wget location for ICP provided Docker package"
+    default = ""
+}
