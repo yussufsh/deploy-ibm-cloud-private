@@ -85,7 +85,7 @@ variable "icp_edition" {
 
 variable "icp_version" {
     description = "ICP version number"
-    default = "2.1.0"
+    default = "2.1.0.3"
 }
 
 variable "icp_architecture" {

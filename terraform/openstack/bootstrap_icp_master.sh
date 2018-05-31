@@ -15,11 +15,26 @@
 #
 ################################################################
 
-# The IBM Cloud Private embedded Docker image
-# (ibmcom/icp-inception for x86 or ibmcom/icp-inception-ppc64le for Power)
-if [ "${icp_architecture}" == "ppc64le" ]; then
+# Determine icp version
+IFS='.' read -r -a iver <<< ${icp_version}
+# fill in any empty digits (some only had 3)
+for i in 0 1 2 3
+do
+    if [ -z $${iver[i]} ] ; then
+        iver[$i]=0
+    fi
+done
+
+# Determine the IBM Cloud Private embedded Docker image name
+if [ "$${iver[0]}" -ge "2" ] && [ "$${iver[1]}" -ge "1" ] &&
+    [ "$${iver[2]}" -ge "0" ] && [ "$${iver[3]}" -ge "3" ]; then
+    # ICP 2.1.0.3 or later
+    ICP_DOCKER_IMAGE="ibmcom/icp-inception:${icp_version}"
+elif [ "${icp_architecture}" == "ppc64le" ]; then
+    # ICP 2.1.0.2 or earlier ppc64le
     ICP_DOCKER_IMAGE="ibmcom/icp-inception-ppc64le:${icp_version}"
 else
+    # ICP 2.1.0.2 or earlier x86
     ICP_DOCKER_IMAGE="ibmcom/icp_inception:${icp_version}"
 fi
 if [ "${icp_edition}" == "ee" ]; then
@@ -43,6 +58,7 @@ if [ -f /etc/redhat-release ]; then
     systemctl disable firewalld
     # Make sure we're not running some old version of docker
     yum -y remove docker docker-engine docker.io
+    yum -y install socat 
     # Either install the icp docker version or from the repo
     if [ ${docker_download_location} != "" ]; then
         TMP_DIR="$(/bin/mktemp -d)"
