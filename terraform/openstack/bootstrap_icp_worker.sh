@@ -29,7 +29,17 @@ if [ -f /etc/redhat-release ]; then
         systemctl disable firewalld
         # Make sure we're not running some old version of docker
         yum -y remove docker docker-engine docker.io
-        yum -y install docker-ce
+        # Either install the icp docker version or from the repo
+        if [ ${docker_download_location} != "" ]; then
+            TMP_DIR="$(/bin/mktemp -d)"
+            cd "$TMP_DIR"
+            /usr/bin/wget -q "${docker_download_location}"
+            chmod +x *
+            ./*.bin --install
+            /bin/rm -rf "$TMP_DIR"
+        else
+            yum -y install docker-ce
+        fi
         systemctl start docker
 
 else
@@ -48,20 +58,27 @@ else
         apt-transport-https \
         ca-certificates \
         curl \
-        software-properties-common
+        software-properties-common python-minimal
 
-	# Add Docker GPG key
-	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-	# Add the repo
-	/usr/bin/add-apt-repository \
-	   "deb https://download.docker.com/linux/ubuntu \
-	   $(lsb_release -cs) \
-	   stable"
-
-        /usr/bin/apt update
-        /usr/bin/apt-get --assume-yes install docker-ce python python-pip
+        # Either install the icp docker version or from the repo
+        if [ ${docker_download_location} != "" ]; then
+            TMP_DIR="$(/bin/mktemp -d)"
+            cd "$TMP_DIR"
+            /usr/bin/wget -q "${docker_download_location}"
+            chmod +x *
+            ./*.bin --install
+            /bin/rm -rf "$TMP_DIR"
+        else
+            # Add Docker GPG key
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            # Add the repo
+            /usr/bin/add-apt-repository \
+            "deb https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable"
+            /usr/bin/apt update
+            /usr/bin/apt-get --assume-yes install docker-ce 
+        fi
 fi
-
 
 # Ensure the hostname is resolvable
 IP=`/sbin/ip -4 -o addr show dev eth0 | awk '{split($4,a,"/");print a[1]}'`

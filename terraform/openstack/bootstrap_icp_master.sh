@@ -15,11 +15,26 @@
 #
 ################################################################
 
-# The IBM Cloud Private embedded Docker image
-# (ibmcom/icp-inception for x86 or ibmcom/icp-inception-ppc64le for Power)
-if [ "${icp_architecture}" == "ppc64le" ]; then
+# Determine icp version
+IFS='.' read -r -a iver <<< ${icp_version}
+# fill in any empty digits (some only had 3)
+for i in 0 1 2 3
+do
+    if [ -z $${iver[i]} ] ; then
+        iver[$i]=0
+    fi
+done
+
+# Determine the IBM Cloud Private embedded Docker image name
+if [ "$${iver[0]}" -ge "2" ] && [ "$${iver[1]}" -ge "1" ] &&
+    [ "$${iver[2]}" -ge "0" ] && [ "$${iver[3]}" -ge "3" ]; then
+    # ICP 2.1.0.3 or later
+    ICP_DOCKER_IMAGE="ibmcom/icp-inception:${icp_version}"
+elif [ "${icp_architecture}" == "ppc64le" ]; then
+    # ICP 2.1.0.2 or earlier ppc64le
     ICP_DOCKER_IMAGE="ibmcom/icp-inception-ppc64le:${icp_version}"
 else
+    # ICP 2.1.0.2 or earlier x86
     ICP_DOCKER_IMAGE="ibmcom/icp_inception:${icp_version}"
 fi
 if [ "${icp_edition}" == "ee" ]; then
@@ -38,41 +53,55 @@ ICP_ROOT_DIR="/opt/ibm-cloud-private-${icp_edition}"
 # Now for distro dependent stuff
 if [ -f /etc/redhat-release ]; then
 #RHEL specific steps
-	# Disable the firewall
-	systemctl stop firewalld
-	systemctl disable firewalld
-	# Make sure we're not running some old version of docker
-	yum -y remove docker docker-engine docker.io
-	yum -y install docker-ce
-	systemctl start docker
-
+    # Disable the firewall
+    systemctl stop firewalld
+    systemctl disable firewalld
+    # Make sure we're not running some old version of docker
+    yum -y remove docker docker-engine docker.io
+    yum -y install socat 
+    # Either install the icp docker version or from the repo
+    if [ ${docker_download_location} != "" ]; then
+        TMP_DIR="$(/bin/mktemp -d)"
+        cd "$TMP_DIR"
+        /usr/bin/wget -q "${docker_download_location}"
+        chmod +x *
+        ./*.bin --install
+        /bin/rm -rf "$TMP_DIR"
+    else
+        yum -y install docker-ce
+    fi
+    systemctl start docker
 else 
 # Ubuntu specific steps
+    # Disable the firewall
+    /usr/sbin/ufw disable
+    # Prepare the system for updates, install Docker and install Python
+    /usr/bin/apt update
+    # Make sure we're not running some old version of docker
+    /usr/bin/apt-get --assume-yes purge docker
+    /usr/bin/apt-get --assume-yes purge docker-engine
+    /usr/bin/apt-get --assume-yes purge docker.io
+    /usr/bin/apt-get --assume-yes install apt-transport-https \
+    ca-certificates curl software-properties-common python python-pip
 
-	# Disable the firewall
-	/usr/sbin/ufw disable
-	# Prepare the system for updates, install Docker and install Python
-	/usr/bin/apt update
-	# We'll use docker-ce (vs docker.io as ce/ee is what is supported by ICP)
-	# Make sure we're not running some old version of docker
-	/usr/bin/apt-get --assume-yes purge docker
-	/usr/bin/apt-get --assume-yes purge docker-engine
-	/usr/bin/apt-get --assume-yes purge docker.io
-	/usr/bin/apt-get --assume-yes install \
-    	apt-transport-https \
-    	ca-certificates \
-    	curl \
-    	software-properties-common
-
-	# Add Docker GPG key
-	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-	# Add the repo
-	/usr/bin/add-apt-repository \
-   		"deb https://download.docker.com/linux/ubuntu \
-   		$(lsb_release -cs) \
-   		stable"
-	/usr/bin/apt update
-	/usr/bin/apt-get --assume-yes install docker-ce python python-pip
+    # Either install the icp docker version or from the repo
+    if [ ${docker_download_location} != "" ]; then
+        TMP_DIR="$(/bin/mktemp -d)"
+        cd "$TMP_DIR"
+        /usr/bin/wget -q "${docker_download_location}"
+        chmod +x *
+        ./*.bin --install
+        /bin/rm -rf "$TMP_DIR"
+    else
+        # Add Docker GPG key
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        # Add the repo
+        /usr/bin/add-apt-repository \
+        "deb https://download.docker.com/linux/ubuntu \
+         $(lsb_release -cs) stable"
+        /usr/bin/apt update
+        /usr/bin/apt-get --assume-yes install docker-ce
+    fi
 fi
 
 # Ensure the hostnames are resolvable
@@ -103,6 +132,8 @@ fi
 # Configure the master and proxy as the same node
 /bin/echo "[master]"  > cluster/hosts
 /bin/echo "$IP"    >> cluster/hosts
+/bin/echo "[va]"  >> cluster/hosts
+/bin/echo "$IP"    >> cluster/hosts
 /bin/echo "[proxy]"  >> cluster/hosts
 /bin/echo "$IP"    >> cluster/hosts
 # Configure the worker node(s)
@@ -118,9 +149,9 @@ if [ -n "${install_user_password}" ]; then
     /bin/sed -i 's/.*ansible_become_password:.*/ansible_become_password: "'${install_user_password}'"/g' cluster/config.yaml
 fi
 if [ -n "${icp_disabled_services}" ]; then
-	/bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ ${icp_disabled_services} ]/g' cluster/config.yaml
+    /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ ${icp_disabled_services} ]/g' cluster/config.yaml
 else
-	/bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
+    /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
 
 fi
 

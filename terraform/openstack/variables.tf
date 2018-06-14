@@ -85,7 +85,7 @@ variable "icp_edition" {
 
 variable "icp_version" {
     description = "ICP version number"
-    default = "2.1.0"
+    default = "2.1.0.3"
 }
 
 variable "icp_architecture" {
@@ -109,4 +109,9 @@ variable "icp_disabled_services" {
 variable "instance_prefix" {
     description = "Prefix to use in instance names"
     default = "icp"
+}
+
+variable "docker_download_location" {
+    description = "HTTP wget location for ICP provided Docker package"
+    default = ""
 }
