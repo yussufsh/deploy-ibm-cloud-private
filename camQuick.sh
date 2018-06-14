@@ -60,10 +60,10 @@ sudo apt-get install --yes --quiet nfs-kernel-server nfs-common
 # make the directories used for PVs, update /etc/exports with the locations, recycle NFS exports on the fly
 echo "create PV directories, update /etc/exports, recycle NFS exports on the fly"
 sudo mkdir -p /export/CAM_logs && sudo mkdir -p /export/CAM_db && sudo mkdir -p /export/CAM_terraform && sudo mkdir -p /export/CAM_BPD_appdata
-echo "/export/CAM_logs   *(rw,sync,no_subtree_check,async,insecure,no_root_squash)" | sudo tee --append /etc/exports
-echo "/export/CAM_db     *(rw,sync,no_subtree_check,async,insecure,no_root_squash)" | sudo tee --append /etc/exports
-echo "/export/CAM_terraform     *(rw,sync,no_subtree_check,async,insecure,no_root_squash)" | sudo tee --append /etc/exports
-echo "/export/CAM_BPD_appdata     *(rw,sync,no_subtree_check,async,insecure,no_root_squash)" | sudo tee --append /etc/exports
+echo "/export/CAM_logs   *(rw,sync,insecure,no_root_squash,no_subtree_check,nohide)" | sudo tee --append /etc/exports
+echo "/export/CAM_db     *(rw,sync,insecure,no_root_squash,no_subtree_check,nohide)" | sudo tee --append /etc/exports
+echo "/export/CAM_terraform     *(rw,sync,insecure,no_root_squash,no_subtree_check,nohide)" | sudo tee --append /etc/exports
+echo "/export/CAM_BPD_appdata     *(rw,sync,insecure,no_root_squash,no_subtree_check,nohide)" | sudo tee --append /etc/exports
 sudo exportfs -a
 
 # unpack the CAM chart and modify the PV files to include IP address and paths
