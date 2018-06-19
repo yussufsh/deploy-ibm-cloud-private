@@ -23,9 +23,31 @@ Prerequisites
   <https://www.terraform.io/downloads.html>`_ and installed it on your workstation
 * You have an instance of OpenStack (or PowerVC) running; the OpenStack version
   should be Ocata or newer
-* You have an Ubuntu 16.04 image loaded within OpenStack with minimally a
+* You have a supported OS image loaded within OpenStack with minimally a
   **100 GB root disk**; this will be used as the baseline image for all of the
   ICP nodes
+
+Supported OS versions
+---------------------
+This Terraform deployment supports the following OS images:
+* Ubuntu 16.04
+* Red Hat Enterprise Linux 7.3, 7.4, 7.5
+  (Ensure that your chosen version of ICP also supports your selected OS)
+
+Additional Redhat image considerations
+------------------------------------
+
+For a Red Hat installation, you must ensure that the base image has 
+the necessary repositories for the docker-ce prequesites, or has those 
+packages installed. Those packages are:
+
+* docker-ce ppc64le from the Unicamp repository
+  http://ftp.unicamp.br/pub/ppc64el/rhel/7/docker-ppc64el/
+
+* pigz available from the RedHat EPEL repository 
+  http://fedoraproject.org/wiki/EPEL
+
+* container-selinux from the Redhat Extras repository
 
 Instructions
 ------------
@@ -35,9 +57,9 @@ Instructions
   Terraform) to all of the nodes; e.g., you can [**ssh-keygen -t rsa**] to
   create this from a Linux or macOS workstation (this will be referenced in
   the subsequent step when you're updating **variables.tf**).
-* Your Ubuntu image should have a default user (often `ubuntu`) that has
-  sudo (root) access in order to provision the install (configured via
-  **variables.tf**).
+* Your image should have a default user (often `ubuntu` for Ubuntu, 'root'
+  for Redhat) that has sudo (root) access in order to provision the install 
+  (configured via **variables.tf**).
 * Edit the contents of **variables.tf** to align with your OpenStack
   (or PowerVC) deployment (make sure you're using an OpenStack flavor with
   sufficient resources; a minimum of 4 vcpus and 16 GB of memory is recommended)
@@ -48,6 +70,8 @@ Instructions
   * Update the *icp_architecture*, *icp_edition*, and *icp_download_location*
     variables within the **variables.tf** file to point to appropriate ICP
     architecture, edition, and tar ball.
+  * Update the *docker_download_location* variable within the **variables.tf** 
+    file to point to appropriate ICP provided Docker tar ball.
 * Run [**terraform apply**] to start the ICP deployment
 * Sit back and relax... within about 30-40 minutes, you should be able to
   access your ICP cluster at https://<ICP_MASTER_IP_ADDRESS>:8443
