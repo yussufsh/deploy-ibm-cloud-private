@@ -38,11 +38,14 @@ Additional Redhat image considerations
 ------------------------------------
 
 For a Red Hat installation, you must ensure that the base image has 
-the necessary repositories for the docker-ce prequesites, or has those 
+the necessary repositories for the docker-ce prerequisites, or has those 
 packages installed. Those packages are:
 
 * docker-ce ppc64le from the Unicamp repository
   http://ftp.unicamp.br/pub/ppc64el/rhel/7/docker-ppc64el/
+  ICP Enterprise Edition users should use the Docker package provided by ICP. 
+  The *docker_download_location* variable should point to a local download 
+  url for that tar ball. 
 
 * pigz available from the RedHat EPEL repository 
   http://fedoraproject.org/wiki/EPEL
@@ -57,7 +60,7 @@ Instructions
   Terraform) to all of the nodes; e.g., you can [**ssh-keygen -t rsa**] to
   create this from a Linux or macOS workstation (this will be referenced in
   the subsequent step when you're updating **variables.tf**).
-* Your image should have a default user (often `ubuntu` for Ubuntu, 'root'
+* Your image should have a default user (typically `ubuntu` for Ubuntu, 'root'
   for Redhat) that has sudo (root) access in order to provision the install 
   (configured via **variables.tf**).
 * Edit the contents of **variables.tf** to align with your OpenStack
