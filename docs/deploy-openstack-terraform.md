@@ -38,19 +38,25 @@ Additional Redhat image considerations
 ------------------------------------
 
 For a Red Hat installation, you must ensure that the base image has 
-the necessary repositories for the docker-ce prerequisites, or has those 
+the necessary repositories for the docker prerequisites, or has those 
 packages installed. Those packages are:
 
-* docker-ce ppc64le from the Unicamp repository
-  http://ftp.unicamp.br/pub/ppc64el/rhel/7/docker-ppc64el/
-  ICP Enterprise Edition users should use the Docker package provided by ICP. 
-  The *docker_download_location* variable should point to a local download 
-  url for that tar ball. 
+* docker-ce
+  ICP Enterprise Edition users should use the ICP-provided docker package and
+  the docker_download_location variable in variables.tf to specify the download url.
 
-* pigz available from the RedHat EPEL repository 
+  Other ppc64le users should use the following Unicamp repository:
+  http://ftp.unicamp.br/pub/ppc64el/rhel/7/docker-ppc64el/
+
+  Other architectures can be obtained from the docker download site: 
+  https://www.docker.com/get-docker
+
+* pigz
+  Available from the RedHat EPEL repository. See:
   http://fedoraproject.org/wiki/EPEL
 
-* container-selinux from the Redhat Extras repository
+* container-selinux and socat.
+  Available from the Redhat Extras repository.
 
 Instructions
 ------------
@@ -60,9 +66,8 @@ Instructions
   Terraform) to all of the nodes; e.g., you can [**ssh-keygen -t rsa**] to
   create this from a Linux or macOS workstation (this will be referenced in
   the subsequent step when you're updating **variables.tf**).
-* Your image should have a default user (typically `ubuntu` for Ubuntu, 'root'
-  for Redhat) that has sudo (root) access in order to provision the install 
-  (configured via **variables.tf**).
+* The default user for your image (configured via variables.tf) should have 
+  sudo (root) access in order to perform the ICP installation.
 * Edit the contents of **variables.tf** to align with your OpenStack
   (or PowerVC) deployment (make sure you're using an OpenStack flavor with
   sufficient resources; a minimum of 4 vcpus and 16 GB of memory is recommended)
@@ -74,7 +79,7 @@ Instructions
     variables within the **variables.tf** file to point to appropriate ICP
     architecture, edition, and tar ball.
   * Update the *docker_download_location* variable within the **variables.tf** 
-    file to point to appropriate ICP provided Docker tar ball.
+    file to point to appropriate ICP-provided Docker tar ball.
 * Run [**terraform apply**] to start the ICP deployment
 * Sit back and relax... within about 30-40 minutes, you should be able to
   access your ICP cluster at https://<ICP_MASTER_IP_ADDRESS>:8443
