@@ -42,7 +42,7 @@ the necessary repositories for the docker prerequisites, or has those
 packages installed. Those packages are:
 
 * docker-ce
-  ICP Enterprise Edition users should use the ICP-provided docker package and
+  ICP Enterprise Edition users should use the ICP-provided docker tar ball and
   the docker_download_location variable in variables.tf to specify the download url.
 
   Other ppc64le users should use the following Unicamp repository:
