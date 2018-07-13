@@ -1,5 +1,5 @@
 # Licensed under Apache License Version 2.0
-# 
+#
 # @ Authur Tim Pouyer tpouyer@us.ibm.com
 # https://raw.githubusercontent.com/IBM/deploy-ibm-cloud-private/master/LICENSE
 
@@ -10,7 +10,7 @@ license = "not accepted"
 # most laptops have at least 8 cores nowadays (adjust based on your laptop hardware)
 cpus = '4'
 
-# this will cause memory swaping in the VM 
+# this will cause memory swaping in the VM
 # performance is decent with SSD drives but may not be with spinning disks
 #memory = '4096'
 
@@ -19,7 +19,7 @@ cpus = '4'
 memory = '10240'
 
 # Update version to pull a specific version i.e. version = '2.1.0-beta-1'
-version = "2.1.0.1"
+version = "2.1.0.3"
 
 # host-only network segment - in most cases you do not have to change this value
 # on some systems this network segment may overlap another network already on your
@@ -28,17 +28,19 @@ version = "2.1.0.1"
 base_segment = '192.168.27'
 
 # enable/disable cluster federation
-federation_enabled = 'true'
+federation_enabled = 'false'
 
 # enable the metering service
 # only used if version < 2.1.0-beta-3 see disabled_management_services below
 metering_enabled = 'true'
 
+install_kibana = 'False'
+
 # disabled mgmt services list
 # "va" turns off vulnerability advisor
 # "metering" turns off prometheus and grafana metering
 # "monitoring"  turns off monitoring services
-disabled_management_services = '["va"]'
+disabled_management_services = '["istio", "vulnerability-advisor", "custom-metrics-adapter", "service-catalog", "metering", "va"]'
 
 # use apt-cacher-ng & docker registry cache servers
 # see instructions in the `README.md` under #Advanced Cache Setup
@@ -83,6 +85,9 @@ install_docker_py: false
 
 # enable the metering service
 metering_enabled: #{metering_enabled}
+
+# install kibana
+install_kibana: #{install_kibana}
 
 # disabled mgmt services list
 disabled_management_services: #{disabled_management_services}
@@ -186,23 +191,24 @@ SCRIPT
 configure_performance_settings = <<SCRIPT
 echo "net.ipv4.ip_forward = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "net.ipv4.conf.all.rp_filter = 0" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv4.conf.default.rp_filter = 0" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv6.conf.default.disable_ipv6 = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv6.conf.lo.disable_ipv6 = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.all.proxy_arp = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.tcp_keepalive_time = 600" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.tcp_keepalive_intvl = 60" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.tcp_keepalive_probes = 20" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.ip_nonlocal_bind = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.all.accept_redirects = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.all.send_redirects = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.all.accept_source_route = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "net.ipv4.tcp_mem = 182757 243679 365514" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv4.conf.all.shared_media = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "net.core.netdev_max_backlog = 182757" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv4.conf.eth1.proxy_arp = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
+echo "net.bridge.bridge-nf-call-iptables = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "fs.inotify.max_queued_events = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "fs.inotify.max_user_instances = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "fs.inotify.max_user_watches = 1048576" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "vm.max_map_count = 262144" | sudo tee --append /etc/sysctl.conf > /dev/null
 echo "kernel.dmesg_restrict = 0" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv4.tcp_keepalive_time = 600" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv4.tcp_keepalive_intvl = 60" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.ipv4.tcp_keepalive_probes = 20" | sudo tee --append /etc/sysctl.conf > /dev/null
-echo "net.bridge.bridge-nf-call-iptables = 1" | sudo tee --append /etc/sysctl.conf > /dev/null
-
 echo "* soft nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
 echo "* hard nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
 echo "root soft nofile 1048576" | sudo tee --append /etc/security/limits.conf > /dev/null
@@ -264,6 +270,9 @@ server time3.google.com
 server time4.google.com
 EOF
 sudo systemctl restart ntp
+sudo apt-get update --yes --quiet
+sudo apt-get upgrade --yes --quiet
+sudo apt autoremove --yes --quiet
 SCRIPT
 
 add_storage_vol = <<SCRIPT
@@ -325,6 +334,8 @@ SCRIPT
 
 configure_nat_iptable_rules = <<SCRIPT
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+sudo iptables -A INPUT -p icmp -j ACCEPT
+sudo iptables -A INPUT -p ipencap -j ACCEPT
 SCRIPT
 
 configure_lxd = <<SCRIPT
@@ -338,16 +349,16 @@ mkdir -p /home/vagrant/cluster
 cat <<EOF | sudo -H lxd init --preseed
 config:
   images.auto_update_interval: 15
-storage_pools: 
+storage_pools:
   - name: lxd
     driver: lvm
-    config: 
+    config:
       volume.size: 100GB
       source: /dev/sdc
-networks: 
+networks:
   - name: lxdbr0
     type: bridge
-    config: 
+    config:
       bridge.driver: native
       bridge.external_interfaces: eth1
       bridge.mode: standard
@@ -363,16 +374,16 @@ networks:
       raw.dnsmasq: |
         dhcp-option-force=26,9000
         server=127.0.0.1
-profiles: 
+profiles:
   - name: default
-    config: 
+    config:
       boot.autostart: true
       linux.kernel_modules: bridge,br_netfilter,x_tables,ip_tables,ip6_tables,ip_vs,ip_set,ipip,xt_mark,xt_multiport,ip_tunnel,tunnel4,netlink_diag,nf_conntrack,nfnetlink,nf_nat,overlay
       raw.lxc: |
-        lxc.aa_profile=unconfined
-        lxc.mount.auto=proc:rw sys:rw cgroup-full:rw
-        lxc.cap.drop=
+        lxc.apparmor.profile=unconfined
+        lxc.mount.auto=proc:rw sys:rw cgroup:rw
         lxc.cgroup.devices.allow=a
+        lxc.cap.drop=
       security.nesting: "true"
       security.privileged: "true"
       user.network-config: |
@@ -431,11 +442,11 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         package_upgrade: true
         package_reboot_if_required: true
         packages:
-          - linux-image-extra-$(uname -r) 
+          - linux-image-extra-$(uname -r)
           - linux-image-extra-virtual
-          - apt-transport-https 
-          - ca-certificates 
-          - curl 
+          - apt-transport-https
+          - ca-certificates
+          - curl
           - software-properties-common
           - squashfuse
           - docker-ce
@@ -464,7 +475,7 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
                 }#{docker_mirror}
               }
             path: /etc/docker/daemon.json
-    devices: 
+    devices:
       aadisable:
         path: /sys/module/nf_conntrack/parameters/hashsize
         source: /dev/null
@@ -473,12 +484,12 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         path: /sys/module/apparmor/parameters/enabled
         source: /dev/null
         type: disk
-      eth0: 
+      eth0:
         name: eth0
         nictype: bridged
         parent: lxdbr0
         type: nic
-      root: 
+      root:
         path: /
         pool: lxd
         type: disk
@@ -486,7 +497,7 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         type: unix-char
         path: /dev/mem
   - name: worker1
-    config: 
+    config:
       boot.autostart.delay: 15
       boot.autostart.priority: 4
       user.meta-data: |
@@ -494,14 +505,14 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         fqdn: worker1.icp
         manage_etc_hosts: true
     devices:
-      eth0: 
+      eth0:
         name: eth0
         nictype: bridged
         parent: lxdbr0
         type: nic
         ipv4.address: #{base_segment}.101
   - name: worker2
-    config: 
+    config:
       boot.autostart.delay: 15
       boot.autostart.priority: 5
       user.meta-data: |
@@ -509,14 +520,14 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         fqdn: worker2.icp
         manage_etc_hosts: true
     devices:
-      eth0: 
+      eth0:
         name: eth0
         nictype: bridged
         parent: lxdbr0
         type: nic
         ipv4.address: #{base_segment}.102
   - name: worker3
-    config: 
+    config:
       boot.autostart.delay: 15
       boot.autostart.priority: 6
       user.meta-data: |
@@ -524,7 +535,7 @@ $(curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sed  's/^/          
         fqdn: worker3.icp
         manage_etc_hosts: true
     devices:
-      eth0: 
+      eth0:
         name: eth0
         nictype: bridged
         parent: lxdbr0
@@ -659,10 +670,15 @@ SCRIPT
 install_kubectl = <<SCRIPT
 echo "Pulling #{image_repo}/kubernetes:v#{k8s_version}..."
 sudo docker run -e LICENSE=#{license} --net=host -v /usr/local/bin:/data #{image_repo}/kubernetes:v#{k8s_version} cp /kubectl /data &> /dev/null
-kubectl config set-credentials icpadmin --username=admin --password=admin &> /dev/null
-kubectl config set-cluster icp --server=http://127.0.0.1:8888 --insecure-skip-tls-verify=true &> /dev/null
-kubectl config set-context icp --cluster=icp --user=admin  --namespace=default &> /dev/null
-kubectl config use-context icp &> /dev/null
+sudo mkdir /home/vagrant/kubectl-certs
+sudo cp /home/vagrant/cluster/cfc-certs/kubecfg.crt /home/vagrant/kubectl-certs/kubecfg.crt
+sudo cp /home/vagrant/cluster/cfc-certs/kubecfg.key /home/vagrant/kubectl-certs/kubecfg.key
+sudo chown -R vagrant:vagrant /home/vagrant/kubectl-certs/
+kubectl config set-cluster icp --server=https://#{base_segment}.100:8001 --insecure-skip-tls-verify=true &> /dev/null
+kubectl config set-context icp --cluster=icp &> /dev/null
+kubectl config set-credentials icp --client-certificate=/home/vagrant/kubectl-certs/kubecfg.crt --client-key=/home/vagrant/kubectl-certs/kubecfg.key &> /dev/null
+kubectl config set-context icp --user=icp &> /dev/null
+kubectl config use-context icp
 SCRIPT
 
 create_persistant_volumes = <<SCRIPT
@@ -970,10 +986,11 @@ echo "nameserver #{base_segment}.100" | sudo tee /etc/resolv.conf > /dev/null
 echo "search icp" | sudo tee --append /etc/resolv.conf > /dev/null
 sudo docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs sudo docker rm > /dev/null || true
 sleep 180
-kubectl config set-credentials icpadmin --username=admin --password=admin &> /dev/null
-kubectl config set-cluster icp --server=http://127.0.0.1:8888 --insecure-skip-tls-verify=true &> /dev/null
-kubectl config set-context icp --cluster=icp --user=admin  --namespace=default &> /dev/null
-kubectl config use-context icp &> /dev/null
+kubectl config set-cluster icp --server=https://#{base_segment}.100:8001 --insecure-skip-tls-verify=true
+kubectl config set-context icp --cluster=icp
+kubectl config set-credentials icp --client-certificate=/home/vagrant/kubectl-certs/kubecfg.crt --client-key=/home/vagrant/kubectl-certs/kubecfg.key
+kubectl config set-context icp --user=icp
+kubectl config use-context icp
 kubectl get pods -o wide -n kube-system | grep "icp-ds" | cut -d ' ' -f 1 | xargs kubectl -n kube-system delete pods
 sleep 120
 while [[ '' != $(kubectl get pods --namespace kube-system | sed -n '1!p' | grep -v Running) ]]
@@ -1056,52 +1073,52 @@ SCRIPT
 happy_dance = <<SCRIPT
 cat << 'EOF'
 
-                                O MMM .MM  MM7                                  
-                         ..M MMMM MMM DMMM MMM.MMMMO.                           
-                       M.MM MMMM..MMM MMMM.MMM.NMMMMMM.                         
-                     MM MM+MMM:. ,MM: MMMM MMM  MMMMMM                          
-                    MM=.MM MMM   MMM. MMMM?MMM  MMM ..~ :MMM.                   
-                MM..MM.MM,OMMI   MMM .MMMMMMMM  MMM    MMMMMMM                  
-              MMMM MM.NMM ~MMM   MMM..MMMMMMMM  MMM.  OMMMMMMMM                 
-           ..MM.MMNMM.MM?  MMM  .MMM..MMMMMMMM  MMM   ~MM+  ,MM                 
-          .MMM.MM:MM.?MM. .MMM  IMMM :MMMMMMMM  MMM   .MMM.  .                  
-         .MMMMMMMMMM.MMM  .MMM~.MMMD MMMIMMMMM  MMMMMM. MMM   .,MMMM.           
-         NMMMMMM.MM: MM.    MMM.MMM, MMM.MMMMM  MMMMMM: =MMM   MMMMMM           
-      ..=MM,MMM.MMM MMM.   .MMM.MMM  MMM.8MMMM  MMM.  ,  .MMM .MMM  :           
-     MM MMM.MMM.MMM MMM     MMM MMM. MMM  MMMM  MMM.      MMMM.MMMM8.           
-   M . MMM.MMMZ7MM  MM.    .MMM MMM  MMM. MMMM  MMM.      .MMMM. MMMMMM   .     
-  M M.:MMMMMMM MMM.=MM      MMM.MMM  MMM  MMMM  MMM         MMM   .,MMMM MM     
-  M, M.7MMMMM..MMMMMMM.M   ~MMM.MMM .MMM. MMMM  MMM        .MMM ?   .MMM.M.M.   
-   MM. N       MMMMMM MMM=MMMM  MMM. MMM  MMMM  MMM. .DMM, MMMM MMMMMMMM  M M   
-   MMMM.  MM.   MMMM..MMMMMMM   MMM. MMM  MMMM :MMMMMZMMMMMMMMM  MMMMM  .M.$M   
-   MM.MMMMM.. MMM   .  ,MMM8    MMM .MMM  .MMM DMMMMM,  MMMMM      ..MM.. MM    
-   MM MM.MMMMMMM:   ~MMMM?       ... :IZ   MM,.NNO?,..         ZMM7.. MMMMMM    
-   MM MM MM MMMMMMMMMMMM=     .=MMMMMMMMMMMMNNMMMMMMMMMMMO...  .8MMMMMMMMMMM    
-   MM MM .M.M:  .MZMMMMMMMMMMMMMMMMMZ: .  . ......:INMMMMMMMMMMMMMMMMM :MMMM    
-   MM MM..M.MM,7MM :  MM  .MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.MMM  MM :MMMM    
-   MM MM M..MM,7MM :MMMM MM.MM  MM =MMM.MM:  ...M .MM.. .MM.:M MMM. MM :MMMM    
-   NMMMM M..MM,7MM  .:MM MM MM ..M =MM   MMMM MMM .M MMM MM. M MM8~ MM :M MM    
-    $MMMMMM.MM,7MM :MMMM .  MM Z.M =MM M MMMM MMM .M MMM =M..  MM +.MM  .NM8    
-      .MMMMMMM+7MM ~MMMM M: MM ZM .=MM M =MMM MMM .M.MMM.MM.M. MM.MMIMMMMMM     
-     MM  . MMMMMMMMMN.MM MM.MM ZM, =M .   MMM MMM .M .MI MM.MM M?MMMMMMMM       
-     MMM    ..  8MMMMMMMMMMMMMDOMM.~M.MMM.MMM.MMM..MM, 7MMMMMMMMMMMMM.          
-     MMMM  MMM  :   ..,MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM$   .            
-     .MMMMMMMM  MM$       .  .. ..:$MMMMMMMMMMMMMMMN=..     .    MMMMMMM.       
-      MMMMMMMM  MMM     MMMM  MMM. .,..   .   . .  IMM  MMMMMM  MMM7. I.        
-       MMMMOMM.~MMM.   MMMMM7.MMZ  ,MM: .MMM .MMM  MMM .MMMMMM $MM,             
-       DM M MM MMMM   MMM  8  MM,  OMM   MMM .MMM. MMM ?MM      MMMM.           
-       .MMZ MM.MM=MN  MMM     MM   MMM  .MMM  MMMM MMM MMM       MMMM           
-         ,  MM MM MM  MM+     MM.  MMM.  MMM  MMMM:MMM MMMMMM    MMMM           
-          ..MM MM MM. MMI    .MM=  MMM   MMM .MMMMMMM..MMMMMM    MMM            
-            MMM7MMMMM MMM     MMMMMMMM. .MMM $MMMMMMM  MMM    .MMMM.            
-             $M.MMMMM MMM     MMMMMMMM. .MMM.MMMMMMMM.=MM~     MMM              
-              . MMMMMM MM    .MMM. MMM. ZMM: MMMMMMMM MMM. IMM..                
-                 M :MM MM:    MMM. MMM  MMM  MMMMMMM  MMMMMMMM                  
-                    MMM7MM. . MMM  MMM. MMM  MMMDMMM  MMMMMM+                   
-                     MM.MMMMMMMMM  MMM..MMM ?MM=~MMM.~MMMM                      
-                       . MMMM OMM. MMM .MMM MMM .MM= MM                         
-                         . M   MMI MMM  MM  MMM..MM                             
-                              ..NM =MM .MM .MD..  .                            
+                                O MMM .MM  MM7
+                         ..M MMMM MMM DMMM MMM.MMMMO.
+                       M.MM MMMM..MMM MMMM.MMM.NMMMMMM.
+                     MM MM+MMM:. ,MM: MMMM MMM  MMMMMM
+                    MM=.MM MMM   MMM. MMMM?MMM  MMM ..~ :MMM.
+                MM..MM.MM,OMMI   MMM .MMMMMMMM  MMM    MMMMMMM
+              MMMM MM.NMM ~MMM   MMM..MMMMMMMM  MMM.  OMMMMMMMM
+           ..MM.MMNMM.MM?  MMM  .MMM..MMMMMMMM  MMM   ~MM+  ,MM
+          .MMM.MM:MM.?MM. .MMM  IMMM :MMMMMMMM  MMM   .MMM.  .
+         .MMMMMMMMMM.MMM  .MMM~.MMMD MMMIMMMMM  MMMMMM. MMM   .,MMMM.
+         NMMMMMM.MM: MM.    MMM.MMM, MMM.MMMMM  MMMMMM: =MMM   MMMMMM
+      ..=MM,MMM.MMM MMM.   .MMM.MMM  MMM.8MMMM  MMM.  ,  .MMM .MMM  :
+     MM MMM.MMM.MMM MMM     MMM MMM. MMM  MMMM  MMM.      MMMM.MMMM8.
+   M . MMM.MMMZ7MM  MM.    .MMM MMM  MMM. MMMM  MMM.      .MMMM. MMMMMM   .
+  M M.:MMMMMMM MMM.=MM      MMM.MMM  MMM  MMMM  MMM         MMM   .,MMMM MM
+  M, M.7MMMMM..MMMMMMM.M   ~MMM.MMM .MMM. MMMM  MMM        .MMM ?   .MMM.M.M.
+   MM. N       MMMMMM MMM=MMMM  MMM. MMM  MMMM  MMM. .DMM, MMMM MMMMMMMM  M M
+   MMMM.  MM.   MMMM..MMMMMMM   MMM. MMM  MMMM :MMMMMZMMMMMMMMM  MMMMM  .M.$M
+   MM.MMMMM.. MMM   .  ,MMM8    MMM .MMM  .MMM DMMMMM,  MMMMM      ..MM.. MM
+   MM MM.MMMMMMM:   ~MMMM?       ... :IZ   MM,.NNO?,..         ZMM7.. MMMMMM
+   MM MM MM MMMMMMMMMMMM=     .=MMMMMMMMMMMMNNMMMMMMMMMMMO...  .8MMMMMMMMMMM
+   MM MM .M.M:  .MZMMMMMMMMMMMMMMMMMZ: .  . ......:INMMMMMMMMMMMMMMMMM :MMMM
+   MM MM..M.MM,7MM :  MM  .MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.MMM  MM :MMMM
+   MM MM M..MM,7MM :MMMM MM.MM  MM =MMM.MM:  ...M .MM.. .MM.:M MMM. MM :MMMM
+   NMMMM M..MM,7MM  .:MM MM MM ..M =MM   MMMM MMM .M MMM MM. M MM8~ MM :M MM
+    $MMMMMM.MM,7MM :MMMM .  MM Z.M =MM M MMMM MMM .M MMM =M..  MM +.MM  .NM8
+      .MMMMMMM+7MM ~MMMM M: MM ZM .=MM M =MMM MMM .M.MMM.MM.M. MM.MMIMMMMMM
+     MM  . MMMMMMMMMN.MM MM.MM ZM, =M .   MMM MMM .M .MI MM.MM M?MMMMMMMM
+     MMM    ..  8MMMMMMMMMMMMMDOMM.~M.MMM.MMM.MMM..MM, 7MMMMMMMMMMMMM.
+     MMMM  MMM  :   ..,MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM$   .
+     .MMMMMMMM  MM$       .  .. ..:$MMMMMMMMMMMMMMMN=..     .    MMMMMMM.
+      MMMMMMMM  MMM     MMMM  MMM. .,..   .   . .  IMM  MMMMMM  MMM7. I.
+       MMMMOMM.~MMM.   MMMMM7.MMZ  ,MM: .MMM .MMM  MMM .MMMMMM $MM,
+       DM M MM MMMM   MMM  8  MM,  OMM   MMM .MMM. MMM ?MM      MMMM.
+       .MMZ MM.MM=MN  MMM     MM   MMM  .MMM  MMMM MMM MMM       MMMM
+         ,  MM MM MM  MM+     MM.  MMM.  MMM  MMMM:MMM MMMMMM    MMMM
+          ..MM MM MM. MMI    .MM=  MMM   MMM .MMMMMMM..MMMMMM    MMM
+            MMM7MMMMM MMM     MMMMMMMM. .MMM $MMMMMMM  MMM    .MMMM.
+             $M.MMMMM MMM     MMMMMMMM. .MMM.MMMMMMMM.=MM~     MMM
+              . MMMMMM MM    .MMM. MMM. ZMM: MMMMMMMM MMM. IMM..
+                 M :MM MM:    MMM. MMM  MMM  MMMMMMM  MMMMMMMM
+                    MMM7MM. . MMM  MMM. MMM  MMMDMMM  MMMMMM+
+                     MM.MMMMMMMMM  MMM..MMM ?MM=~MMM.~MMMM
+                       . MMMM OMM. MMM .MMM MMM .MM= MM
+                         . M   MMI MMM  MM  MMM..MM
+                              ..NM =MM .MM .MD..  .
 
 
 ###############################################################################
@@ -1149,7 +1166,8 @@ Vagrant.configure(2) do |config|
 
   config.vm.define "icp" do |icp|
     icp.vm.box = "bento/ubuntu-16.04"
-    icp.vm.box_version = "201710.25.0"
+    icp.vm.box_version = "201806.08.0"
+    # icp.vm.box_version = "201710.25.0"
     icp.vm.hostname = "master.icp"
     icp.vm.box_check_update = true
     icp.vm.network "private_network", ip: "#{base_segment}.100", adapter_ip: "#{base_segment}.1", netmask: "255.255.255.0", auto_config: false
@@ -1187,7 +1205,7 @@ Vagrant.configure(2) do |config|
       virtualbox.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-min-adjust", 100] # adjustments if drift > 100 ms
       virtualbox.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-on-restore", 1] # sync time on restore
       virtualbox.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-start", 1] # sync time on start
-      virtualbox.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 1000] # at 1 second drift, the time will be set and not "smoothly" adjusted 
+      virtualbox.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 1000] # at 1 second drift, the time will be set and not "smoothly" adjusted
       virtualbox.customize ['modifyvm', :id, '--cableconnected1', 'on'] # fix for https://github.com/mitchellh/vagrant/issues/7648
       virtualbox.customize ['modifyvm', :id, '--cableconnected2', 'on'] # fix for https://github.com/mitchellh/vagrant/issues/7648
       virtualbox.customize ['storagectl', :id, '--name', 'SATA Controller', '--hostiocache', 'on'] # use host I/O cache
@@ -1216,7 +1234,7 @@ Vagrant.configure(2) do |config|
     icp.vm.provision "shell", privileged: false, inline: install_startup_script, keep_color: true, name: "install_startup_script"
     icp.vm.provision "shell", privileged: false, inline: install_shutdown_script, keep_color: true, name: "install_shutdown_script"
     icp.vm.provision "shell", privileged: false, inline: install_shellinabox, keep_color: true, name: "install_shellinabox"
-    icp.vm.provision "shell", privileged: false, inline: ensure_services_up, keep_color: true, name: "ensure_services_up", run: "always"
+    # icp.vm.provision "shell", privileged: false, inline: ensure_services_up, keep_color: true, name: "ensure_services_up", run: "always"
     icp.vm.provision "shell", privileged: false, inline: happy_dance, keep_color: true, name: "happy_dance"
   end
 end
