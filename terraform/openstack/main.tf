@@ -42,7 +42,7 @@ resource "openstack_compute_instance_v2" "icp-worker-vm" {
         name = "${var.openstack_network_name}"
     }
 
-    user_data = "${file("bootstrap_icp_worker.sh")}"
+    user_data = "${data.template_file.bootstrap_worker.rendered}"
 }
 
 resource "openstack_compute_instance_v2" "icp-master-vm" {
@@ -80,6 +80,14 @@ data "template_file" "bootstrap_init" {
         icp_disabled_services = "${join(", ",formatlist("\"%s\"",var.icp_disabled_services))}"
         install_user_name = "${var.icp_install_user}"
         install_user_password = "${var.icp_install_user_password}"
+        docker_download_location = "${var.docker_download_location}"
+    }
+}
+
+data "template_file" "bootstrap_worker" {
+    template = "${file("bootstrap_icp_worker.sh")}"
+
+    vars {
         docker_download_location = "${var.docker_download_location}"
     }
 }
