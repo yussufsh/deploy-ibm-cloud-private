@@ -1070,10 +1070,10 @@ if [ "60" -gt "$count" ]; then
 	cat kube-system-services.list
 	rm -f kube-system-services.list
 fi
-curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -s 'http://bit.ly/2fqp98V' > /dev/null || true
 SCRIPT
 
 happy_dance = <<SCRIPT
+curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -s 'http://bit.ly/2fqp98V' > /dev/null || true
 cat << 'EOF'
 
                                 O MMM .MM  MM7
