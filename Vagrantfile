@@ -34,7 +34,7 @@ federation_enabled = 'false'
 # only used if version < 2.1.0-beta-3 see disabled_management_services below
 metering_enabled = 'true'
 
-install_kibana = 'False'
+kibana_install = 'false'
 
 # disabled mgmt services list
 # "va" turns off vulnerability advisor
@@ -87,7 +87,7 @@ install_docker_py: false
 metering_enabled: #{metering_enabled}
 
 # install kibana
-install_kibana: #{install_kibana}
+kibana_install: #{kibana_install}
 
 # disabled mgmt services list
 disabled_management_services: #{disabled_management_services}
