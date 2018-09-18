@@ -71,6 +71,26 @@ if [ -f /etc/redhat-release ]; then
         yum -y install docker-ce
     fi
     systemctl start docker
+elif [ -f /etc/SuSE-release ]; then
+#SLES specific steps
+    # Disable the firewall
+    systemctl stop SuSEfirewall2
+    systemctl disable SuSEfirewall2
+    # Make sure we're not running some old version of docker
+    zypper -n remove docker docker-engine docker.io
+    zypper -n install socat
+    # Either install the icp docker version or from the repo
+    if [ ${docker_download_location} != "" ]; then
+        TMP_DIR="$(/bin/mktemp -d)"
+        cd "$TMP_DIR"
+        /usr/bin/wget -q "${docker_download_location}"
+        chmod +x *
+        ./*.bin --install
+        /bin/rm -rf "$TMP_DIR"
+    else
+        zypper -n install docker
+    fi
+    systemctl start docker
 else 
 # Ubuntu specific steps
     # Disable the firewall
