@@ -169,6 +169,10 @@ image_load() {
     if [[ "${image_location:0:2}" == "s3" ]]; then
       # stream it right out of s3 into docker
       echo "Load docker images from ${image_location} ..."
+
+      sudo mkdir -p /opt/ibm/cluster/images
+      #I tried to copy the file then load the image into docker but it failed, please tidy this up
+      /usr/local/bin/aws s3 cp ${image_location} /opt/ibm/cluster/images/ &
       /usr/local/bin/aws s3 cp ${image_location} - | tar zxf - -O | docker load
     fi
   fi
