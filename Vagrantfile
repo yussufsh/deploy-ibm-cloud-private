@@ -19,7 +19,7 @@ cpus = '4'
 memory = '10240'
 
 # Update version to pull a specific version i.e. version = '2.1.0-beta-1'
-version = "2.1.0.3"
+version = "3.1.0"
 
 # host-only network segment - in most cases you do not have to change this value
 # on some systems this network segment may overlap another network already on your
@@ -48,9 +48,9 @@ use_cache = 'false'
 cache_host = '192.168.27.99'
 apt_cache_port = '3142'
 docker_registry_port = '5000'
-helm_version = '2.6.0'
-k8s_version = '1.8.3'
-etcd_version = '3.1.5'
+helm_version = '2.11.0'
+k8s_version = '1.11.0'
+etcd_version = '3.2.18'
 
 ###############################################################################
 #                  DO NOT MODIFY ANYTHING BELOW THIS POINT                    #
@@ -91,6 +91,17 @@ kibana_install: #{kibana_install}
 
 # disabled mgmt services list
 disabled_management_services: #{disabled_management_services}
+
+management_services:
+  istio: disabled
+  vulnerability-advisor: disabled
+  storage-glusterfs: disabled
+  storage-minio: disabled
+  custom-metrics-adapter: disabled
+  image-security-enforcement: disabled
+  metering: disabled
+  monitoring: disabled
+  service-catalog: disabled
 
 # following variables are used to pickup internal builds
 version: latest
