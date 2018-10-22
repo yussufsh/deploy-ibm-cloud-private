@@ -1,4 +1,4 @@
-## Deploy IBM Cloud Private beta using Vagrant
+## Deploy IBM Cloud Private using Vagrant
 
 #### Requirements
 In order to successfully run the `Vagrantfile` your laptop will need the following:
@@ -6,10 +6,10 @@ In order to successfully run the `Vagrantfile` your laptop will need the followi
  - 10GiB of RAM
    -  16GiB of RAM total on your laptop will be required 
    -  Change the [`memory`](https://github.com/IBM/deploy-ibm-cloud-private/blob/master/Vagrantfile#L15) setting in the `Vagrantfile` 
-   -  Can attempt with less memory but not guarentees
- - 50GiB of free disk space
+   -  Can attempt with less memory but no guarantees
+ - 50GB of free disk space
  - VirtualBox 5.2 [Download](https://www.virtualbox.org/wiki/Downloads)
- - Vagrant 2.0 [Download](https://www.vagrantup.com/downloads.html)
+ - Vagrant 2.x [Download](https://www.vagrantup.com/downloads.html)
  - Operating Systems
    - Mac OSx 10.12.6
    - Windows 10

@@ -10,16 +10,12 @@ license = "not accepted"
 # most laptops have at least 8 cores nowadays (adjust based on your laptop hardware)
 cpus = '4'
 
-# this will cause memory swaping in the VM
-# performance is decent with SSD drives but may not be with spinning disks
-#memory = '4096'
-
-# use this setting for better performance if you have the ram available on your laptop
-# uncomment the below line and comment out the above line "#memory = '4096'"
-memory = '10240'
+# should be sufficent on laptops with 16GiB of RAM (but you won't want to run any apps
+# while this vm is running)
+memory = '12288'
 
 # Update version to pull a specific version i.e. version = '2.1.0-beta-1'
-version = "2.1.0.3"
+version = "3.1.0"
 
 # host-only network segment - in most cases you do not have to change this value
 # on some systems this network segment may overlap another network already on your
@@ -27,30 +23,12 @@ version = "2.1.0.3"
 # i.e. 192.168.56 or 192.168.16 etc...
 base_segment = '192.168.27'
 
-# enable/disable cluster federation
-federation_enabled = 'false'
-
-# enable the metering service
-# only used if version < 2.1.0-beta-3 see disabled_management_services below
-metering_enabled = 'true'
-
-kibana_install = 'false'
-
-# disabled mgmt services list
-# "va" turns off vulnerability advisor
-# "metering" turns off prometheus and grafana metering
-# "monitoring"  turns off monitoring services
-disabled_management_services = '["istio", "vulnerability-advisor", "custom-metrics-adapter", "service-catalog", "metering", "va"]'
-
 # use apt-cacher-ng & docker registry cache servers
 # see instructions in the `README.md` under #Advanced Cache Setup
 use_cache = 'false'
 cache_host = '192.168.27.99'
 apt_cache_port = '3142'
 docker_registry_port = '5000'
-helm_version = '2.6.0'
-k8s_version = '1.8.3'
-etcd_version = '3.1.5'
 
 ###############################################################################
 #                  DO NOT MODIFY ANYTHING BELOW THIS POINT                    #
@@ -70,27 +48,22 @@ service_cluster_ip_range: 10.0.0.1/24
 # Flag to enable ldap with true, disabled by default.
 ldap_enabled: false
 
-# Config federation cluster
-federation_enabled: #{federation_enabled}
-federation_cluster: federation-cluster
-federation_domain: cluster.federation
-# federation_apiserver_extra_args: []
-# federation_controllermanager_extra_args: []
-
 ansible_user: vagrant
 ansible_become: true
 
 # enabled/disable python docker install
 install_docker_py: false
 
-# enable the metering service
-metering_enabled: #{metering_enabled}
-
-# install kibana
-kibana_install: #{kibana_install}
-
-# disabled mgmt services list
-disabled_management_services: #{disabled_management_services}
+management_services:
+  istio: disabled
+  vulnerability-advisor: disabled
+  storage-glusterfs: disabled
+  storage-minio: disabled
+  custom-metrics-adapter: disabled
+  image-security-enforcement: disabled
+  metering: disabled
+  monitoring: disabled
+  service-catalog: disabled
 
 # following variables are used to pickup internal builds
 version: latest
@@ -149,9 +122,6 @@ if File.exist?(".private")
   private_registry_server = $private_registry_server
   docker_username = $docker_username
   docker_password = $docker_password
-  helm_version = $helm_version
-  k8s_version = $k8s_version
-  etcd_version = $etcd_version
 end
 
 docker_mirror = ''
@@ -353,7 +323,7 @@ storage_pools:
   - name: lxd
     driver: lvm
     config:
-      volume.size: 100GB
+      volume.size: 150GB
       source: /dev/sdc
 networks:
   - name: lxdbr0
@@ -575,8 +545,6 @@ echo "#{rsa_private_key}" > /home/vagrant/cluster/ssh_key
 echo '#{cfc_config}' > /home/vagrant/cluster/config.yaml
 sed -i "s/image_tag\: latest/image_tag\: #{version}/g" /home/vagrant/cluster/config.yaml
 sed -i "s/version\: latest/version\: #{version}/g" /home/vagrant/cluster/config.yaml
-sed -i "s|federation_enabled\: false|federation_enabled\: #{federation_enabled}|g" /home/vagrant/cluster/config.yaml
-sed -i "s|metering_enabled\: false|metering_enabled\: #{metering_enabled}|g" /home/vagrant/cluster/config.yaml
 sed -i "s|image_repo\: ibmcom|image_repo\: #{image_repo}|g" /home/vagrant/cluster/config.yaml
 sed -i "s|private_registry_enabled\: false|private_registry_enabled\: #{private_registry_enabled}|g" /home/vagrant/cluster/config.yaml
 sed -i "s|private_registry_server\: placeholder.com|private_registry_server\: #{private_registry_server}|g" /home/vagrant/cluster/config.yaml
@@ -637,44 +605,23 @@ bx plugin install container-registry -r Bluemix &> /dev/null
 docker login -u #{docker_username} -p #{docker_password} #{private_registry_server}
 SCRIPT
 
-precache_images = <<SCRIPT
-echo ""
-echo "Seeding IBM Cloud Private installation by pre-caching required docker images."
-echo "This may take a few minutes depending on your connection speed and reliability."
-
-echo "Pre-caching docker images...."
-echo "Pulling #{image_repo}/icp-inception:#{version}..."
-docker pull #{image_repo}/icp-inception:#{version} &> /dev/null
-echo "Pulling #{image_repo}/icp-datastore:#{version}..."
-docker pull #{image_repo}/icp-datastore:#{version} &> /dev/null
-echo "Pulling #{image_repo}/icp-platform-auth:#{version}..."
-docker pull #{image_repo}/icp-platform-auth:#{version} &> /dev/null
-echo "Pulling #{image_repo}/iam-token-service:#{version}..."
-docker pull #{image_repo}/iam-token-service:#{version} &> /dev/null
-echo "Pulling #{image_repo}/kubernetes:v#{k8s_version}..."
-docker pull #{image_repo}/kubernetes:v#{k8s_version} &> /dev/null
-echo "Pulling #{image_repo}/helm:v#{helm_version}..."
-docker pull #{image_repo}/helm:v#{helm_version} &> /dev/null
-echo "Pulling #{image_repo}/etcd:v#{etcd_version}..."
-docker pull #{image_repo}/etcd:v#{etcd_version} &> /dev/null
-SCRIPT
-
 install_icp = <<SCRIPT
 exec 3>&1 1>>icp_install_log 2>&1
 sudo docker run -e LICENSE=#{license} --net=host -v "$(pwd)/cluster":/installer/cluster #{image_repo}/icp-inception:#{version} install | tee /dev/fd/3
-if grep -q fatal icp_install_log; then
-	echo "FATAL ERROR OCCURRED DURING INSTALLATION :-(" 1>&3
-	cat icp_install_log | grep -C 3 fatal 1>&3
-	echo "The install log can be view with: " 1>&3
-	echo "vagrant ssh" 1>&3
-	echo "cat icp_install_log" 1>&3
-	exit 1
-fi
+# if grep -q fatal icp_install_log; then
+# 	echo "FATAL ERROR OCCURRED DURING INSTALLATION :-(" 1>&3
+# 	cat icp_install_log | grep -C 3 fatal 1>&3
+# 	echo "The install log can be view with: " 1>&3
+# 	echo "vagrant ssh" 1>&3
+# 	echo "cat icp_install_log" 1>&3
+# 	exit 1
+# fi
 SCRIPT
 
 install_kubectl = <<SCRIPT
-echo "Pulling #{image_repo}/kubernetes:v#{k8s_version}..."
-sudo docker run -e LICENSE=#{license} --net=host -v /usr/local/bin:/data #{image_repo}/kubernetes:v#{k8s_version} cp /kubectl /data &> /dev/null
+sudo curl '-#' -fL -o /tmp/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v1.11.0/bin/linux/amd64/kubectl
+sudo chmod +x /tmp/kubectl
+sudo mv /tmp/kubectl /usr/local/bin/kubectl
 sudo mkdir /home/vagrant/kubectl-certs
 sudo cp /home/vagrant/cluster/cfc-certs/kubecfg.crt /home/vagrant/kubectl-certs/kubecfg.crt
 sudo cp /home/vagrant/cluster/cfc-certs/kubecfg.key /home/vagrant/kubectl-certs/kubecfg.key
@@ -973,11 +920,14 @@ kubectl create -f /home/vagrant/volumes.yaml
 SCRIPT
 
 install_helm = <<SCRIPT
-sudo docker run -t --entrypoint=/bin/cp -v /usr/local/bin:/data #{image_repo}/helm:v#{helm_version}  /helm /data/ &> /dev/null
-sudo mkdir -p /var/lib/helm &> /dev/null
-export HELM_HOME=/var/lib/helm &> /dev/null
-echo "HELM_HOME=/var/lib/helm" >> ~/.bash_profile &> /dev/null
-sudo chown -R vagrant:vagrant /var/lib/helm &> /dev/null
+sudo curl '-#' -fL -o /tmp/helm.tar.gz -LO https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz
+sudo tar xzf /tmp/helm.tar.gz -C /tmp/
+sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
+sudo rm -f /tmp/helm.tar.gz
+sudo rm -rf /tmp/linux-amd64/ \
+export HELM_HOME=/usr/local/bin/helm &> /dev/null
+echo "HELM_HOME=/usr/local/bin/helm" >> ~/.bash_profile &> /dev/null
+sudo chown -R vagrant:vagrant /usr/local/bin/helm &> /dev/null
 helm init --client-only &> /dev/null
 SCRIPT
 
@@ -1232,7 +1182,6 @@ Vagrant.configure(2) do |config|
     if !private_registry_enabled.eql? 'false'
       icp.vm.provision "shell", inline: docker_login, keep_color: true, name: "docker_login"
     end
-    icp.vm.provision "shell", inline: precache_images, keep_color: true, name: "precache_images"
     icp.vm.provision "shell", privileged: false, inline: install_icp, keep_color: true, name: "install_icp"
     icp.vm.provision "shell", privileged: false, inline: install_kubectl, keep_color: true, name: "install_kubectl"
     icp.vm.provision "shell", privileged: false, inline: create_persistant_volumes, keep_color: true, name: "create_persistant_volumes"
