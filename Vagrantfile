@@ -8,11 +8,11 @@
 license = "not accepted"
 
 # most laptops have at least 8 cores nowadays (adjust based on your laptop hardware)
-cpus = '4'
+cpus = '6'
 
 # should be sufficent on laptops with 16GiB of RAM (but you won't want to run any apps
 # while this vm is running)
-memory = '12288'
+memory = '6144'
 
 # Update version to pull a specific version i.e. version = '2.1.0-beta-1'
 version = "3.1.0"
@@ -54,6 +54,9 @@ ansible_become: true
 # enabled/disable python docker install
 install_docker_py: false
 
+# etcd_extra_args: [\"--max-wal=5\"]
+# kube_proxy_extra_args: [\"--proxy-mode=ipvs\"]
+
 management_services:
   istio: disabled
   vulnerability-advisor: disabled
@@ -64,6 +67,9 @@ management_services:
   metering: disabled
   monitoring: disabled
   service-catalog: disabled
+  logging: disabled
+  nvidia-device-plugin: disabled
+  metrics-server: disabled
 
 # following variables are used to pickup internal builds
 version: latest
@@ -193,6 +199,33 @@ sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="cgroup_e
 sudo update-grub
 SCRIPT
 
+load_ipvs_module = <<SCRIPT
+echo ip_vs_dh >> /etc/modules
+echo ip_vs_ftp >> /etc/modules
+echo ip_vs >> /etc/modules
+echo ip_vs_lblc >> /etc/modules
+echo ip_vs_lblcr >> /etc/modules
+echo ip_vs_lc >> /etc/modules
+echo ip_vs_nq >> /etc/modules
+echo ip_vs_rr >> /etc/modules
+echo ip_vs_sed >> /etc/modules
+echo ip_vs_sh >> /etc/modules
+echo ip_vs_wlc >> /etc/modules
+echo ip_vs_wrr >> /etc/modules
+modprobe ip_vs_dh
+modprobe ip_vs_ftp
+modprobe ip_vs
+modprobe ip_vs_lblc
+modprobe ip_vs_lblcr
+modprobe ip_vs_lc
+modprobe ip_vs_nq
+modprobe ip_vs_rr
+modprobe ip_vs_sed
+modprobe ip_vs_sh
+modprobe ip_vs_wlc
+modprobe ip_vs_wrr
+SCRIPT
+
 configure_apt_proxy = <<SCRIPT
 sudo bash -c 'cat > /etc/apt/apt.conf.d/02apt-cacher' <<'EOF'
 Acquire::http::Proxy "http://#{cache_host}:#{apt_cache_port}/";
@@ -216,7 +249,8 @@ sudo add-apt-repository "deb [arch=amd64] http://download.docker.com/linux/ubunt
 sudo apt-get update --yes --quiet
 sudo apt-get install --yes --quiet --target-release=xenial-backports lxd lxd-client bridge-utils dnsmasq thin-provisioning-tools \
     curl linux-image-extra-$(uname -r) linux-image-extra-virtual apt-transport-https ca-certificates software-properties-common \
-    docker-ce python-setuptools python-pip build-essential python-dev nfs-kernel-server nfs-common aufs-tools ntp criu
+    docker-ce python-setuptools python-pip build-essential python-dev nfs-kernel-server nfs-common aufs-tools ntp criu ipvsadm \
+    rng-tools util-linux socat openssh-server
 sudo -H pip install --upgrade pip
 sudo -H pip install docker
 sudo usermod -aG lxd vagrant
@@ -240,6 +274,18 @@ server time3.google.com
 server time4.google.com
 EOF
 sudo systemctl restart ntp
+sudo bash -c 'cat >> /etc/ssh/sshd_config' <<'EOF'
+GatewayPorts yes
+AllowAgentForwarding yes
+AllowTcpForwarding yes
+AllowStreamLocalForwarding yes
+PermitTunnel yes
+EOF
+sudo systemctl restart sshd.service
+sudo bash -c 'cat >> /etc/default/rng-tools' <<'EOF'
+HRNGDEVICE=/dev/urandom
+EOF
+sudo /etc/init.d/rng-tools restart
 sudo apt-get update --yes --quiet
 sudo apt-get upgrade --yes --quiet
 sudo apt autoremove --yes --quiet
@@ -348,7 +394,7 @@ profiles:
   - name: default
     config:
       boot.autostart: true
-      linux.kernel_modules: bridge,br_netfilter,x_tables,ip_tables,ip6_tables,ip_vs,ip_set,ipip,xt_mark,xt_multiport,ip_tunnel,tunnel4,netlink_diag,nf_conntrack,nfnetlink,nf_nat,overlay
+      linux.kernel_modules: bridge,br_netfilter,x_tables,ip_tables,ip6_tables,ip_vs,ip_vs,ip_vs_rr,ip_vs_wrr,ip_vs_sh,nf_conntrack_ipv4,ip_set,ipip,xt_mark,xt_multiport,ip_tunnel,tunnel4,netlink_diag,nf_conntrack,nfnetlink,nf_nat,overlay
       raw.lxc: |
         lxc.apparmor.profile=unconfined
         lxc.mount.auto=proc:rw sys:rw cgroup:rw
@@ -538,7 +584,7 @@ cat > /home/vagrant/cluster/hosts <<'EOF'
 #{base_segment}.102 kubelet_extra_args='["--fail-swap-on=false"]'
 
 [proxy]
-#{base_segment}.100 kube_proxy_extra_args='["--proxy-mode=iptables"]'
+#{base_segment}.100
 EOF
 
 echo "#{rsa_private_key}" > /home/vagrant/cluster/ssh_key
@@ -619,7 +665,7 @@ sudo docker run -e LICENSE=#{license} --net=host -v "$(pwd)/cluster":/installer/
 SCRIPT
 
 install_kubectl = <<SCRIPT
-sudo curl '-#' -fL -o /tmp/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v1.11.0/bin/linux/amd64/kubectl
+sudo curl -o /tmp/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v1.11.0/bin/linux/amd64/kubectl
 sudo chmod +x /tmp/kubectl
 sudo mv /tmp/kubectl /usr/local/bin/kubectl
 sudo mkdir /home/vagrant/kubectl-certs
@@ -920,7 +966,7 @@ kubectl create -f /home/vagrant/volumes.yaml
 SCRIPT
 
 install_helm = <<SCRIPT
-sudo curl '-#' -fL -o /tmp/helm.tar.gz -LO https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz
+sudo curl -o /tmp/helm.tar.gz -LO https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz
 sudo tar xzf /tmp/helm.tar.gz -C /tmp/
 sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
 sudo rm -f /tmp/helm.tar.gz
@@ -1108,6 +1154,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", privileged: false, inline: configure_master_ssh_keys, keep_color: true, name: "configure_master_ssh_keys"
   config.vm.provision "shell", privileged: false, inline: configure_swap_space, keep_color: true, name: "configure_swap_space"
   config.vm.provision "shell", privileged: false, inline: configure_performance_settings, keep_color: true, name: "configure_performance_settings"
+  config.vm.provision "shell", privileged: true, inline: load_ipvs_module, keep_color: true, name: "load_ipvs_module"
   if use_cache.downcase.eql? 'true'
   	config.vm.provision "shell", privileged: false, inline: configure_apt_proxy, keep_color: true, name: "configure_apt_proxy"
   end
@@ -1118,6 +1165,21 @@ Vagrant.configure(2) do |config|
   config.vm.provision "shell", privileged: false, inline: configure_lxd, keep_color: true, name: "configure_lxd"
   config.vm.provision "shell", privileged: false, inline: bring_up_icp_host_interface, keep_color: true, name: "bring_up_icp_host_interface"
   config.vm.provision "shell", privileged: false, inline: set_dnsnameserver_to_lxd_dnsmasq, keep_color: true, name: "set_dnsnameserver_to_lxd_dnsmasq"
+  config.vm.provision "shell", privileged: false, inline: configure_icp_install, keep_color: true, name: "configure_icp_install"
+  config.vm.provision "shell", privileged: false, inline: boot_lxd_worker_nodes, keep_color: true, name: "boot_lxd_worker_nodes"
+  config.vm.provision "shell", privileged: false, inline: wait_for_worker_nodes_to_boot, keep_color: true, name: "wait_for_worker_nodes_to_boot"
+  if !private_registry_enabled.eql? 'false'
+    config.vm.provision "shell", inline: docker_login, keep_color: true, name: "docker_login"
+  end
+  config.vm.provision "shell", privileged: false, inline: install_icp, keep_color: true, name: "install_icp"
+  config.vm.provision "shell", privileged: false, inline: install_kubectl, keep_color: true, name: "install_kubectl"
+  config.vm.provision "shell", privileged: false, inline: create_persistant_volumes, keep_color: true, name: "create_persistant_volumes"
+  config.vm.provision "shell", privileged: false, inline: install_helm, keep_color: true, name: "install_helm"
+  config.vm.provision "shell", privileged: false, inline: install_startup_script, keep_color: true, name: "install_startup_script"
+  config.vm.provision "shell", privileged: false, inline: install_shutdown_script, keep_color: true, name: "install_shutdown_script"
+  config.vm.provision "shell", privileged: false, inline: install_shellinabox, keep_color: true, name: "install_shellinabox"
+  # config.vm.provision "shell", privileged: false, inline: ensure_services_up, keep_color: true, name: "ensure_services_up", run: "always"
+  config.vm.provision "shell", privileged: false, inline: happy_dance, keep_color: true, name: "happy_dance"
 
   config.vm.define "icp" do |icp|
     icp.vm.box = "bento/ubuntu-16.04"
@@ -1175,21 +1237,5 @@ Vagrant.configure(2) do |config|
       virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--nonrotational', 'on', '--medium', "#{extra_storage_disk_path}"]
       virtualbox.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--nonrotational', 'on', '--medium', "#{lxd_storage_disk_path}"]
     end
-
-    icp.vm.provision "shell", privileged: false, inline: configure_icp_install, keep_color: true, name: "configure_icp_install"
-    icp.vm.provision "shell", privileged: false, inline: boot_lxd_worker_nodes, keep_color: true, name: "boot_lxd_worker_nodes"
-    icp.vm.provision "shell", privileged: false, inline: wait_for_worker_nodes_to_boot, keep_color: true, name: "wait_for_worker_nodes_to_boot"
-    if !private_registry_enabled.eql? 'false'
-      icp.vm.provision "shell", inline: docker_login, keep_color: true, name: "docker_login"
-    end
-    icp.vm.provision "shell", privileged: false, inline: install_icp, keep_color: true, name: "install_icp"
-    icp.vm.provision "shell", privileged: false, inline: install_kubectl, keep_color: true, name: "install_kubectl"
-    icp.vm.provision "shell", privileged: false, inline: create_persistant_volumes, keep_color: true, name: "create_persistant_volumes"
-    icp.vm.provision "shell", privileged: false, inline: install_helm, keep_color: true, name: "install_helm"
-    icp.vm.provision "shell", privileged: false, inline: install_startup_script, keep_color: true, name: "install_startup_script"
-    icp.vm.provision "shell", privileged: false, inline: install_shutdown_script, keep_color: true, name: "install_shutdown_script"
-    icp.vm.provision "shell", privileged: false, inline: install_shellinabox, keep_color: true, name: "install_shellinabox"
-    # icp.vm.provision "shell", privileged: false, inline: ensure_services_up, keep_color: true, name: "ensure_services_up", run: "always"
-    icp.vm.provision "shell", privileged: false, inline: happy_dance, keep_color: true, name: "happy_dance"
   end
 end
