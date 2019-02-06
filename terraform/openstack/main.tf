@@ -93,6 +93,11 @@ data "template_file" "bootstrap_init" {
         mcm_download_location = "${var.mcm_download_location}"
         mcm_download_user = "${var.mcm_download_user}"
         mcm_download_password = "${var.mcm_download_password}"
+        cam_docker_user = "${var.cam_docker_user}"
+        cam_docker_password = "${var.cam_docker_password}"
+        cam_download_location = "${var.cam_download_location}"
+        cam_download_user = "${var.cam_download_user}"
+        cam_download_password = "${var.cam_download_password}"
     }
 }
 
@@ -135,5 +140,10 @@ resource "null_resource" "icp-worker-scaler" {
     provisioner "file" {
         source      = "${path.module}/install_mcm.sh"
         destination = "/tmp/install_mcm.sh"
+    }
+
+    provisioner "file" {
+        source      = "${path.module}/install_cam.sh"
+        destination = "/tmp/install_cam.sh"
     }
 }

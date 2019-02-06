@@ -116,6 +116,7 @@ variable "docker_download_location" {
     default = ""
 }
 
+#MCM related variables
 variable "mcm_download_location" {
     default = ""
 }
@@ -125,5 +126,26 @@ variable "mcm_download_user" {
 }
 
 variable "mcm_download_password" {
+    default = ""
+}
+
+#CAM related variables
+variable "cam_docker_user" {
+    default = ""
+}
+
+variable "cam_docker_password" {
+    default = ""
+}
+
+variable "cam_download_location" {
+    default = ""
+}
+
+variable "cam_download_user" {
+    default = ""
+}
+
+variable "cam_download_password" {
     default = ""
 }
