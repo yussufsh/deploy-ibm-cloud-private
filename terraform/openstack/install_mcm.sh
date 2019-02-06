@@ -15,17 +15,18 @@
 #
 ################################################################
 
-ICP_VERSION=$1
-IP=$5
+
+IP=$1
+ICP_VERSION=$2
 
 /bin/echo "Installing MCM.."
 
 export HOME=~
 # Download and Load PPA archive
 cd $HOME
-location=$2
-user=$3
-password=$4
+location=$3
+user=$4
+password=$5
 wget -nv --continue ${user:+--user} ${user} ${password:+--password} ${password} \
      -O /tmp/mcm.tgz "${location}"
  
@@ -106,6 +107,11 @@ helm install --name=${MCM_HELM_RELEASE_NAME} \
     --set klusterlet.apiserverConfig.token=${HUB_CLUSTER_TOKEN} \
     ${CHARTNAME} --tls \
     --ca-file ~/.helm/ca.pem --cert-file ~/.helm/cert.pem --key-file ~/.helm/key.pem
+
+if [[ $? -gt 0 ]]; then
+    /bin/echo "MCM installation failed" >&2
+    exit 1
+fi
 
 
 

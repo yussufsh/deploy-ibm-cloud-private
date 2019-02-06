@@ -37,6 +37,8 @@ resource "openstack_compute_instance_v2" "icp-worker-vm" {
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_worker_node}"
     key_pair  = "${openstack_compute_keypair_v2.icp-key-pair.name}"
+    security_groups   = ["${var.openstack_security_groups}"]
+    availability_zone = "${var.openstack_availability_zone}"
 
     network {
         name = "${var.openstack_network_name}"
@@ -69,6 +71,8 @@ resource "openstack_compute_instance_v2" "icp-master-vm" {
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_master_node}"
     key_pair  = "${openstack_compute_keypair_v2.icp-key-pair.name}"
+    security_groups   = ["${var.openstack_security_groups}"]
+    availability_zone = "${var.openstack_availability_zone}"
 
     network {
         name = "${var.openstack_network_name}"
@@ -93,6 +97,11 @@ data "template_file" "bootstrap_init" {
         mcm_download_location = "${var.mcm_download_location}"
         mcm_download_user = "${var.mcm_download_user}"
         mcm_download_password = "${var.mcm_download_password}"
+        cam_docker_user = "${var.cam_docker_user}"
+        cam_docker_password = "${var.cam_docker_password}"
+        cam_download_location = "${var.cam_download_location}"
+        cam_download_user = "${var.cam_download_user}"
+        cam_download_password = "${var.cam_download_password}"
     }
 }
 
@@ -103,6 +112,18 @@ data "template_file" "bootstrap_worker" {
         docker_download_location = "${var.docker_download_location}"
     }
 }
+
+# Create floating ip master
+#resource "openstack_networking_floatingip_v2" "master_pub_ip" {
+#    count = "1"
+#    pool  = "${var.openstack_floating_network_name}"
+#}
+# Assign floating ip to master
+#resource "openstack_compute_floatingip_associate_v2" "master_pub_ip" {
+#    count       = "1"
+#    floating_ip = "${openstack_networking_floatingip_v2.master_pub_ip.*.address[count.index]}"
+#    instance_id = "${openstack_compute_instance_v2.icp-master-vm.*.id[count.index]}"
+#}
 
 resource "null_resource" "icp-worker-scaler" {
     triggers {
@@ -115,6 +136,7 @@ resource "null_resource" "icp-worker-scaler" {
         host            = "${openstack_compute_instance_v2.icp-master-vm.*.network.0.fixed_ip_v4}"
         private_key     = "${file(var.openstack_ssh_key_file)}"
         timeout         = "15m"
+#        bastion_host    = "${openstack_compute_floatingip_associate_v2.master_pub_ip.0.floating_ip}"
     }
 
     provisioner "file" {
@@ -135,5 +157,10 @@ resource "null_resource" "icp-worker-scaler" {
     provisioner "file" {
         source      = "${path.module}/install_mcm.sh"
         destination = "/tmp/install_mcm.sh"
+    }
+
+    provisioner "file" {
+        source      = "${path.module}/install_cam.sh"
+        destination = "/tmp/install_cam.sh"
     }
 }
