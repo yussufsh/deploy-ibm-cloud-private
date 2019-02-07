@@ -107,7 +107,7 @@ else
     ca-certificates curl software-properties-common python python-pip
 
     # Either install the icp docker version or from the repo
-    if [ ${docker_download_location} != "" ]; then
+    if [ ! -z ${docker_download_location} ]; then
         TMP_DIR="$(/bin/mktemp -d)"
         cd "$TMP_DIR"
         /usr/bin/wget -q "${docker_download_location}"
@@ -168,7 +168,7 @@ done
 # Configure the worker node(s)
 for worker_ip in $( cat /tmp/icp_worker_nodes.txt | sed 's/|/\n/g' ); do
     x=0
-    while [ "$x" -lt 100 ] && ! ping -c 1 -W 1 $worker_ip; do
+    while [ "$x" -lt 100 ] && ! nc -z $worker_ip 22; do
        x=$((x+1))
        /bin/echo "$worker_ip is unreachable, trying after 10s"
        /bin/sleep 10
@@ -189,7 +189,7 @@ else
     /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
 
 fi
-
+sleep 200
 # Setup the private key for the ICP cluster (injected at deploy time)
 /bin/cp /tmp/id_rsa.terraform \
     $ICP_ROOT_DIR/cluster/ssh_key

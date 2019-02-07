@@ -128,4 +128,10 @@ helm install ibm-stable/ibm-cam --name cam --namespace services \
     --set global.image.secretName=${dockersecretname} --set arch=${ARCH} \
     --set global.iam.deployApiKey=${deployApiKey} --tls
 
+if [[ $? -gt 0 ]]; then
+    /bin/echo "CAM installation failed" >&2
+    exit 1
+fi
+
+
 /bin/echo "CAM installation completed"

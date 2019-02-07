@@ -129,13 +129,15 @@ variable "mcm_download_password" {
     default = ""
 }
 
-#CAM related variables
+# CAM related variables
 variable "cam_docker_user" {
     default = ""
+    description = "Docker Store user name, needs subscription to CAM"
 }
 
 variable "cam_docker_password" {
     default = ""
+    description = "Docker Store API key OR password"
 }
 
 variable "cam_download_location" {
