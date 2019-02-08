@@ -38,6 +38,7 @@ function init_cam {
     helm init --client-only
     cloudctl login -a https://${HUB_CLUSTER_IP}:8443 \
         --skip-ssl-validation -u admin -p admin -n services
+    docker login mycluster.icp:8500 -u admin -p admin
 }
 
 # Create Docker Store secret
@@ -52,14 +53,13 @@ function create_docker_secret {
 # Download and Load PPA archive
 function load_ppa_archive {
     wget -nv --continue ${user:+--user} ${user} ${password:+--password} ${password} \
-        -O /tmp/cam.tgz "${location}"
+        -O /tmp/cam.tar.gz "${location}"
     if [[ $? -gt 0 ]]; then
         /bin/echo "Error downloading ${location}" >&2
         exit 1
     fi
-    cloudctl catalog load-archive --archive 
-    cloudctl catalog load-ppa-archive -a /tmp/cam.tgz \
-        --registry mycluster.icp:8500/kube-system
+    cloudctl catalog load-archive -a /tmp/cam.tar.gz
+    wget https://mycluster.icp:8443/helm-repo/requiredAssets/ibm-cam-${VERSION}.tgz --no-check-certificate
 }
 
 # Add Helm Repos
@@ -69,6 +69,7 @@ function add_ibm_chart_repos {
     helm repo add local-charts https://${HUB_CLUSTER_IP}:8443/helm-repo/charts \
         --ca-file ~/.helm/ca.pem --cert-file ~/.helm/cert.pem \
         --key-file ~/.helm/key.pem
+    helm fetch ibm-stable/ibm-cam --version ${VERSION}
     helm repo update
 }
 
@@ -123,22 +124,21 @@ function generate_deployment_key {
         -r Administrator,ClusterAdministrator --service-name 'identity'
     export deployApiKey=`cloudctl iam service-api-key-create \
         ${serviceApiKeyName} ${serviceIDName} \
-        -d 'Api key for service-deploy' | tail -1 | awk '{print $NF}'`
+        -d 'Api key for service-deploy' | grep 'API Key' | awk '{print $NF}'`
 }
 
 # Install Cloud Automation Manager
 function install_cam {
     if [ -z ${product_id} ]; then
-        helm install ibm-stable/ibm-cam --name cam --namespace services \
+        helm install ibm-cam-${VERSION}.tgz --name cam --namespace services \
             --set global.image.secretName=${dockersecretname} --set arch=${ARCH} \
             --set global.iam.deployApiKey=${deployApiKey} --tls
     else
-        helm install ibm-stable/ibm-cam --name cam --namespace services \
+        helm install ibm-cam-${VERSION}.tgz --name cam --namespace services \
             --set global.image.secretName=${dockersecretname} --set arch=${ARCH} \
             --set global.iam.deployApiKey=${deployApiKey} \
             --set global.id.productID=${product_id} --tls
     fi
-    
     if [[ $? -gt 0 ]]; then
         /bin/echo "CAM installation failed" >&2
         exit 1
@@ -148,12 +148,13 @@ function install_cam {
 
 METHOD=$1
 HUB_CLUSTER_IP=$2
+VERSION=$3
 
 /bin/echo "Installing CAM.."
 if [ $METHOD == "ONLINE" ]; then
-    docker_user=$3
-    docker_password=$4
-    product_id=$5
+    docker_user=$4
+    docker_password=$5
+    product_id=$6
     init_cam
     create_docker_secret
     add_ibm_chart_repos
@@ -161,12 +162,14 @@ if [ $METHOD == "ONLINE" ]; then
     generate_deployment_key
     install_cam
 else
-    location=$3
-    user=$4
-    password=$5
+    location=$4
+    user=$5
+    password=$6
+    product_id=$7
     init_cam
     load_ppa_archive
     create_persistent_volumes
+    generate_deployment_key
     install_cam
 fi
 /bin/echo "CAM installation completed"

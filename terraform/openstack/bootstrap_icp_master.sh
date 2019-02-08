@@ -211,12 +211,12 @@ fi
 
 if [ ! -z ${cam_docker_user} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh ONLINE $IP ${cam_docker_user} ${cam_docker_password} \
+    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${cam_docker_user} ${cam_docker_password} \
         ${cam_product_id} | /usr/bin/tee cam_install.log
 elif [ ! -z ${cam_download_location} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh OFFLINE $IP ${cam_download_location} \
-        ${cam_download_user} ${cam_download_password} | \
+    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${cam_download_location} \
+        ${cam_download_user} ${cam_download_password} ${cam_product_id} | \
         /usr/bin/tee cam_install.log
 fi
 
