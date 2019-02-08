@@ -126,7 +126,7 @@ variable "openstack_security_groups" {
     default = ["default", "icp-rules"]
 }
 
-#MCM related variables
+#MCM installation related variables
 variable "mcm_download_location" {
     default = ""
 }
@@ -139,15 +139,23 @@ variable "mcm_download_password" {
     default = ""
 }
 
-#CAM related variables
+#CAM online installation related variables
 variable "cam_docker_user" {
     default = ""
+    description = "Docker Store user name, needs subscription to CAM"
 }
 
 variable "cam_docker_password" {
     default = ""
+    description = "Docker Store API key OR password"
 }
 
+variable "cam_product_id" {
+    default = ""
+    description = "Product Id text for Cloud Automation Manager"
+}
+
+#CAM offline installation related variables
 variable "cam_download_location" {
     default = ""
 }

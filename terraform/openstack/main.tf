@@ -99,6 +99,7 @@ data "template_file" "bootstrap_init" {
         mcm_download_password = "${var.mcm_download_password}"
         cam_docker_user = "${var.cam_docker_user}"
         cam_docker_password = "${var.cam_docker_password}"
+        cam_product_id = "${var.cam_product_id}"
         cam_download_location = "${var.cam_download_location}"
         cam_download_user = "${var.cam_download_user}"
         cam_download_password = "${var.cam_download_password}"
