@@ -75,7 +75,13 @@ function add_ibm_chart_repos {
 
 # Install and configure exportfs; Create Persistent Volumes
 function create_persistent_volumes {
-    apt install -y nfs-kernel-server
+    if [ -f /etc/redhat-release ]; then
+        yum -y install nfs-utils
+    elif [ -f /etc/SuSE-release ]; then
+        zypper -n install nfs-kernel-server
+    else
+        apt-get -y install nfs-kernel-server
+    fi
 
     pvs=( cam-mongo cam-logs cam-terraform cam-bpd-appdata )
     sizes=( 15 10 15 20 )
