@@ -156,6 +156,7 @@ METHOD=$1
 HUB_CLUSTER_IP=$2
 VERSION=$3
 
+/bin/echo
 /bin/echo "Installing CAM.."
 if [ $METHOD == "ONLINE" ]; then
     docker_user=$4

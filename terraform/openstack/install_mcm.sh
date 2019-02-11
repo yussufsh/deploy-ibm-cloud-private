@@ -132,6 +132,7 @@ function install_mcm_cli {
 HUB_CLUSTER_IP=$1
 ICP_VERSION=$2
 
+/bin/echo
 /bin/echo "Installing MCM.."
 location=$3
 user=$4
