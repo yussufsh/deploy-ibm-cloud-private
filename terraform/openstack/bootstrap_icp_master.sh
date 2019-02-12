@@ -62,7 +62,7 @@ if [ -f /etc/redhat-release ]; then
     yum -y remove docker docker-engine docker.io
     yum -y install socat 
     # Either install the icp docker version or from the repo
-    if [ ${docker_download_location} != "" ]; then
+    if [ ! -z ${docker_download_location} ]; then
         TMP_DIR="$(/bin/mktemp -d)"
         cd "$TMP_DIR"
         /usr/bin/wget -q "${docker_download_location}"
@@ -82,7 +82,7 @@ elif [ -f /etc/SuSE-release ]; then
     zypper -n remove docker docker-engine docker.io
     zypper -n install socat
     # Either install the icp docker version or from the repo
-    if [ ${docker_download_location} != "" ]; then
+    if [ ! -z ${docker_download_location} ]; then
         TMP_DIR="$(/bin/mktemp -d)"
         cd "$TMP_DIR"
         /usr/bin/wget -q "${docker_download_location}"
@@ -168,7 +168,7 @@ done
 # Configure the worker node(s)
 for worker_ip in $( cat /tmp/icp_worker_nodes.txt | sed 's/|/\n/g' ); do
     x=0
-    while [ "$x" -lt 100 ] && ! nc -z $worker_ip 22; do
+    while [ "$x" -lt 100 ] && ! ping -c 1 -W 1 $worker_ip; do
        x=$((x+1))
        /bin/echo "$worker_ip is unreachable, trying after 10s"
        /bin/sleep 10
@@ -189,7 +189,7 @@ else
     /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
 
 fi
-sleep 200
+
 # Setup the private key for the ICP cluster (injected at deploy time)
 /bin/cp /tmp/id_rsa.terraform \
     $ICP_ROOT_DIR/cluster/ssh_key
@@ -210,12 +210,12 @@ fi
 
 if [ ! -z ${cam_docker_user} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh online $IP ${cam_docker_user} ${cam_docker_password} | \
-        /usr/bin/tee cam_install.log
+    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${cam_docker_user} ${cam_docker_password} \
+        ${cam_product_id} | /usr/bin/tee cam_install.log
 elif [ ! -z ${cam_download_location} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh offline $IP ${cam_download_location} \
-        ${cam_download_user} ${cam_download_password} | \
+    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${cam_download_location} \
+        ${cam_download_user} ${cam_download_password} ${cam_product_id} | \
         /usr/bin/tee cam_install.log
 fi
 
