@@ -169,7 +169,7 @@ done
 # Configure the worker node(s)
 for worker_ip in $( cat /tmp/icp_worker_nodes.txt | sed 's/|/\n/g' ); do
     x=0
-    while [ "$x" -lt 100 ] && ! nc -z $worker_ip 22; do
+    while [ "$x" -lt 100 ] && ! ping -c 1 -W 1 $worker_ip; do
        x=$((x+1))
        /bin/echo "$worker_ip is unreachable, trying after 10s"
        /bin/sleep 10
