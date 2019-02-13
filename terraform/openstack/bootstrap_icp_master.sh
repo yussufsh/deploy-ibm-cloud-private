@@ -129,7 +129,6 @@ fi
 # Ensure the hostnames are resolvable
 IP=`hostname -I | cut -f 1 -d ' '`
 /bin/echo "$IP $(hostname)" >> /etc/hosts
-/bin/sed -i.bak -e "8d" /etc/hosts
 
 # Download and configure IBM Cloud Private
 if [ "${icp_edition}" == "ee" ]; then
