@@ -38,9 +38,6 @@ function init_mcm {
     helm init --client-only
     cloudctl login -a https://${HUB_CLUSTER_IP}:8443 \
         --skip-ssl-validation -u admin -p admin -n kube-system
-    ls /etc/docker/certs.d/
-    ping -c 1 mycluster.icp
-    cat /etc/hosts
     docker login mycluster.icp:8500 -u admin -p admin
 }
 
