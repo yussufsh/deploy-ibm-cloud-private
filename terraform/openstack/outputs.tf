@@ -12,6 +12,9 @@
 # Copyright IBM Corp. 2017.
 #
 ################################################################
+#output "icp-master-vm-pub-ip" {
+#    value = "${openstack_compute_floatingip_associate_v2.master_pub_ip.0.floating_ip}"
+#}
 
 output "icp-master-vm-ip" {
     value = "${openstack_compute_instance_v2.icp-master-vm.network.0.fixed_ip_v4}"

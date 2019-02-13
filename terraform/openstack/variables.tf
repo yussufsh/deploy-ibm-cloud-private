@@ -116,6 +116,16 @@ variable "docker_download_location" {
     default = ""
 }
 
+#variable "openstack_floating_network_name" {
+#    default = "admin_floating_net"
+#}
+variable "openstack_availability_zone" {
+    default = "power"
+}
+variable "openstack_security_groups" {
+    default = ["default", "icp-rules"]
+}
+
 #MCM installation related variables
 variable "mcm_download_location" {
     default = ""

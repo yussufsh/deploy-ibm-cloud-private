@@ -37,6 +37,8 @@ resource "openstack_compute_instance_v2" "icp-worker-vm" {
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_worker_node}"
     key_pair  = "${openstack_compute_keypair_v2.icp-key-pair.name}"
+    security_groups   = ["${var.openstack_security_groups}"]
+    availability_zone = "${var.openstack_availability_zone}"
 
     network {
         name = "${var.openstack_network_name}"
@@ -69,6 +71,8 @@ resource "openstack_compute_instance_v2" "icp-master-vm" {
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_master_node}"
     key_pair  = "${openstack_compute_keypair_v2.icp-key-pair.name}"
+    security_groups   = ["${var.openstack_security_groups}"]
+    availability_zone = "${var.openstack_availability_zone}"
 
     network {
         name = "${var.openstack_network_name}"
@@ -111,6 +115,18 @@ data "template_file" "bootstrap_worker" {
     }
 }
 
+# Create floating ip master
+#resource "openstack_networking_floatingip_v2" "master_pub_ip" {
+#    count = "1"
+#    pool  = "${var.openstack_floating_network_name}"
+#}
+# Assign floating ip to master
+#resource "openstack_compute_floatingip_associate_v2" "master_pub_ip" {
+#    count       = "1"
+#    floating_ip = "${openstack_networking_floatingip_v2.master_pub_ip.*.address[count.index]}"
+#    instance_id = "${openstack_compute_instance_v2.icp-master-vm.*.id[count.index]}"
+#}
+
 resource "null_resource" "icp-worker-scaler" {
     triggers {
         workers = "${join("|", openstack_compute_instance_v2.icp-worker-vm.*.network.0.fixed_ip_v4)}"
@@ -122,6 +138,7 @@ resource "null_resource" "icp-worker-scaler" {
         host            = "${openstack_compute_instance_v2.icp-master-vm.*.network.0.fixed_ip_v4}"
         private_key     = "${file(var.openstack_ssh_key_file)}"
         timeout         = "15m"
+#        bastion_host    = "${openstack_compute_floatingip_associate_v2.master_pub_ip.0.floating_ip}"
     }
 
     provisioner "file" {
