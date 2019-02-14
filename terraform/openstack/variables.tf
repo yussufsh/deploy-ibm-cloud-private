@@ -98,6 +98,11 @@ variable "icp_download_location" {
     default = "http://LOCATION_OF_ICP_ENTERPRISE_EDITION.tar.gz"
 }
 
+variable "icp_default_admin_password" {
+    description = "Password to use for default admin user"
+    default = "S3cure-icp-admin-passw0rd-default"
+}
+
 variable "icp_disabled_services" {
     type = "list"
     description = "List of ICP services to disable (e.g., va, monitoring or metering)"

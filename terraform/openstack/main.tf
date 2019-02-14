@@ -86,6 +86,7 @@ data "template_file" "bootstrap_init" {
         icp_architecture = "${var.icp_architecture}"
         icp_edition = "${var.icp_edition}"
         icp_download_location = "${var.icp_download_location}"
+        icp_default_admin_password = "${var.icp_default_admin_password}"
         icp_disabled_services = "${join(", ",formatlist("\"%s\"",var.icp_disabled_services))}"
         install_user_name = "${var.icp_install_user}"
         install_user_password = "${var.icp_install_user_password}"
