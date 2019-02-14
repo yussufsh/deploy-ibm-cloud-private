@@ -129,6 +129,7 @@ fi
 # Ensure the hostnames are resolvable
 IP=`hostname -I | cut -f 1 -d ' '`
 /bin/echo "$IP $(hostname)" >> /etc/hosts
+/bin/sed -i.bak -e "8d" /etc/hosts
 
 # Download and configure IBM Cloud Private
 if [ "${icp_edition}" == "ee" ]; then
@@ -176,6 +177,9 @@ for worker_ip in $( cat /tmp/icp_worker_nodes.txt | sed 's/|/\n/g' ); do
     /bin/echo "[worker]"     >> cluster/hosts
     /bin/echo "$worker_ip" >> cluster/hosts
 done
+master_pub_ip=`cat /tmp/icp_master_nodes.txt`
+echo 'master floating ip is...'
+echo $master_pub_ip
 
 # Modify config.yaml with appropriate variables - these come from the template
 /bin/sed -i 's/.*ansible_user:.*/ansible_user: "'${install_user_name}'"/g' cluster/config.yaml
@@ -189,6 +193,13 @@ else
     /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
 
 fi
+if [ -n "${icp_default_admin_password}" ]; then
+    /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
+fi
+if [ -n "$master_pub_ip" ]; then
+    /bin/sed -i 's/.*cluster_lb_address:.*/cluster_lb_address: '$master_pub_ip'/g' cluster/config.yaml
+fi
+
 
 # Setup the private key for the ICP cluster (injected at deploy time)
 /bin/cp /tmp/id_rsa.terraform \
@@ -203,18 +214,18 @@ cd "$ICP_ROOT_DIR/cluster"
 
 if [ ! -z ${mcm_download_location} ]; then
     chmod a+x /tmp/install_mcm.sh
-    /tmp/install_mcm.sh $IP ${icp_version} ${mcm_download_location} \
+    /tmp/install_mcm.sh $IP ${icp_version} ${icp_default_admin_password} ${mcm_download_location} \
         ${mcm_download_user} ${mcm_download_password} | \
         /usr/bin/tee mcm_install.log
 fi
 
 if [ ! -z ${cam_docker_user} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${cam_docker_user} ${cam_docker_password} \
+    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${icp_default_admin_password} ${cam_docker_user} ${cam_docker_password} \
         ${cam_product_id} | /usr/bin/tee cam_install.log
 elif [ ! -z ${cam_download_location} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${cam_download_location} \
+    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${icp_default_admin_password} ${cam_download_location} \
         ${cam_download_user} ${cam_download_password} ${cam_product_id} | \
         /usr/bin/tee cam_install.log
 fi

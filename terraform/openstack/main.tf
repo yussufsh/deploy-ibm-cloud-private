@@ -90,6 +90,7 @@ data "template_file" "bootstrap_init" {
         icp_architecture = "${var.icp_architecture}"
         icp_edition = "${var.icp_edition}"
         icp_download_location = "${var.icp_download_location}"
+        icp_default_admin_password = "${var.icp_default_admin_password}"
         icp_disabled_services = "${join(", ",formatlist("\"%s\"",var.icp_disabled_services))}"
         install_user_name = "${var.icp_install_user}"
         install_user_password = "${var.icp_install_user_password}"
@@ -116,16 +117,16 @@ data "template_file" "bootstrap_worker" {
 }
 
 # Create floating ip master
-#resource "openstack_networking_floatingip_v2" "master_pub_ip" {
-#    count = "1"
-#    pool  = "${var.openstack_floating_network_name}"
-#}
+resource "openstack_networking_floatingip_v2" "master_pub_ip" {
+    count = "1"
+    pool  = "${var.openstack_floating_network_name}"
+}
 # Assign floating ip to master
-#resource "openstack_compute_floatingip_associate_v2" "master_pub_ip" {
-#    count       = "1"
-#    floating_ip = "${openstack_networking_floatingip_v2.master_pub_ip.*.address[count.index]}"
-#    instance_id = "${openstack_compute_instance_v2.icp-master-vm.*.id[count.index]}"
-#}
+resource "openstack_compute_floatingip_associate_v2" "master_pub_ip" {
+    count       = "1"
+    floating_ip = "${openstack_networking_floatingip_v2.master_pub_ip.*.address[count.index]}"
+    instance_id = "${openstack_compute_instance_v2.icp-master-vm.*.id[count.index]}"
+}
 
 resource "null_resource" "icp-worker-scaler" {
     triggers {
@@ -145,9 +146,14 @@ resource "null_resource" "icp-worker-scaler" {
         source      = "${path.module}/icp_worker_scaler.sh"
         destination = "/tmp/icp_worker_scaler.sh"
     }
+    
+    provisioner "file" {
+        content     = "${openstack_compute_floatingip_associate_v2.master_pub_ip.0.floating_ip}"
+        destination = "/tmp/icp_master_nodes.txt"
+    }
 
     provisioner "file" {
-        content     = "${join("|", openstack_compute_instance_v2.icp-worker-vm.*.network.0.fixed_ip_v4)}"
+        content     = "${openstack_compute_instance_v2.icp-worker-vm.count == 0 ? "|" : join("|", openstack_compute_instance_v2.icp-worker-vm.*.network.0.fixed_ip_v4)}"
         destination = "/tmp/icp_worker_nodes.txt"
     }
 
