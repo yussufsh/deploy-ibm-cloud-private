@@ -147,6 +147,7 @@ function install_cam {
     fi
     if [[ $? -gt 0 ]]; then
         /bin/echo "CAM installation failed" >&2
+        /bin/echo "/tmp/install_cam.sh " $*
         exit 1
     fi
 }
