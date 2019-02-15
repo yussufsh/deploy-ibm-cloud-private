@@ -114,6 +114,7 @@ function install_mcm {
         --ca-file ~/.helm/ca.pem --cert-file ~/.helm/cert.pem --key-file ~/.helm/key.pem
     if [[ $? -gt 0 ]]; then
         /bin/echo "MCM installation failed" >&2
+        /bin/echo "/tmp/install_mcm.sh " $*
         exit 1
     fi
 }

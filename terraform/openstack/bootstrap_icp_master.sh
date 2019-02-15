@@ -198,6 +198,7 @@ fi
     $ICP_ROOT_DIR/cluster/ssh_key
 /bin/chmod 400 $ICP_ROOT_DIR/cluster/ssh_key
 
+sleep 200
 # Deploy IBM Cloud Private
 cd "$ICP_ROOT_DIR/cluster"
 /usr/bin/docker run -e LICENSE=accept --net=host -t -v \
