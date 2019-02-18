@@ -189,6 +189,9 @@ else
     /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
 
 fi
+if [ -n "${icp_default_admin_password}" ]; then
+    /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
+fi
 
 # Setup the private key for the ICP cluster (injected at deploy time)
 /bin/cp /tmp/id_rsa.terraform \
@@ -203,18 +206,18 @@ cd "$ICP_ROOT_DIR/cluster"
 
 if [ ! -z ${mcm_download_location} ]; then
     chmod a+x /tmp/install_mcm.sh
-    /tmp/install_mcm.sh $IP ${icp_version} ${mcm_download_location} \
+    /tmp/install_mcm.sh $IP ${icp_version} ${icp_default_admin_password} ${mcm_download_location} \
         ${mcm_download_user} ${mcm_download_password} | \
         /usr/bin/tee mcm_install.log
 fi
 
 if [ ! -z ${cam_docker_user} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${cam_docker_user} ${cam_docker_password} \
+    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${icp_default_admin_password} ${cam_docker_user} ${cam_docker_password} \
         ${cam_product_id} | /usr/bin/tee cam_install.log
 elif [ ! -z ${cam_download_location} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${cam_download_location} \
+    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${icp_default_admin_password} ${cam_download_location} \
         ${cam_download_user} ${cam_download_password} ${cam_product_id} | \
         /usr/bin/tee cam_install.log
 fi

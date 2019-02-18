@@ -37,8 +37,8 @@ function init_mcm {
 
     helm init --client-only
     cloudctl login -a https://${HUB_CLUSTER_IP}:8443 \
-        --skip-ssl-validation -u admin -p admin -n kube-system
-    docker login mycluster.icp:8500 -u admin -p admin
+        --skip-ssl-validation -u admin -p ${icp_default_admin_password} -n kube-system
+    docker login mycluster.icp:8500 -u admin -p ${icp_default_admin_password}
 }
 
 # Download and Load PPA archive
@@ -52,14 +52,14 @@ function load_ppa_archive {
 
     cd /tmp/
     tar -zxvf mcm.tgz
-    mcm_file="/tmp/mcm-${ICP_VERSION}/mcm-${ICP_VERSION}"
-    mcm_file="${mcm_file}-${ARCH}.tgz"
+    mcm_file="/tmp/mcm-${ICP_VERSION}/mcm"
+    if [ $ICP_VERSION == "3.1.1" ]; then
+        mcm_file="${mcm_file}-${ICP_VERSION}-${ARCH}.tgz"
+    else
+        mcm_file="${mcm_file}-ppa-${ICP_VERSION}.tgz"
+    fi
     cd -
 
-    ls /etc/docker/certs.d/
-    docker login mycluster.icp:8500 -u admin -p admin
-    ls /etc/docker/certs.d/
-    ping -c 1 mycluster.icp
     cloudctl catalog load-ppa-archive -a ${mcm_file} \
         --registry mycluster.icp:8500/kube-system
     ls /etc/docker/certs.d/
@@ -128,12 +128,13 @@ function install_mcm_cli {
 
 HUB_CLUSTER_IP=$1
 ICP_VERSION=$2
+icp_default_admin_password=$3
 
 /bin/echo
 /bin/echo "Installing MCM.."
-location=$3
-user=$4
-password=$5
+location=$4
+user=$5
+password=$6
 
 init_mcm
 load_ppa_archive
