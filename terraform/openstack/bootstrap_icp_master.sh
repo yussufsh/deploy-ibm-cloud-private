@@ -210,6 +210,9 @@ fi
 if [ -n "$master_pub_ip" ]; then
     /bin/sed -i 's/.*cluster_lb_address:.*/cluster_lb_address: '$master_pub_ip'/g' cluster/config.yaml
 fi
+if [ -n "${icp_default_admin_password}" ]; then
+    /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
+fi
 
 
 # Setup the private key for the ICP cluster (injected at deploy time)
