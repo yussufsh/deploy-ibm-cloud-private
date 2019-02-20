@@ -182,17 +182,28 @@ echo 'master floating ip is...'
 echo $master_pub_ip
 
 # Modify config.yaml with appropriate variables - these come from the template
+cp cluster/config.yaml cluster/config_back.yaml
 /bin/sed -i 's/.*ansible_user:.*/ansible_user: "'${install_user_name}'"/g' cluster/config.yaml
 /bin/sed -i 's/.*ansible_become:.*/ansible_become: true/g' cluster/config.yaml
 if [ -n "${install_user_password}" ]; then
     /bin/sed -i 's/.*ansible_become_password:.*/ansible_become_password: "'${install_user_password}'"/g' cluster/config.yaml
 fi
-if [ -n "${icp_disabled_services}" ]; then
-    /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ ${icp_disabled_services} ]/g' cluster/config.yaml
-else
-    /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
 
-fi
+# For each service remove default entry and add again under management_services
+IFS=',' read -r -a disabled_services <<< ${icp_disabled_services}
+IFS=',' read -r -a enabled_services <<< ${icp_enabled_services}
+for element in $${disabled_services[*]}; do
+    if [ -n "$element" ]; then
+        /bin/sed -i "/^  $element: /d" cluster/config.yaml
+        /bin/sed -i "/management_services/a\\ \\ $element: disabled" cluster/config.yaml
+    fi
+done
+for element in $${enabled_services[*]}; do
+    if [ -n "$element" ]; then
+        /bin/sed -i "/^  $element: /d" cluster/config.yaml
+        /bin/sed -i "/management_services/a\\ \\ $element: enabled" cluster/config.yaml
+    fi
+done
 if [ -n "${icp_default_admin_password}" ]; then
     /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
 fi
