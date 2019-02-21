@@ -27,7 +27,3 @@ output "icp-worker-vm-ips" {
 output "icp_default_admin_password" {
     value = "${var.icp_default_admin_password}"
 }
-
-output "icp_default_admin_password" {
-  value = "${var.icp_default_admin_password}"
-}
