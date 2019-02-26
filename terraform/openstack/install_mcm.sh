@@ -43,13 +43,15 @@ function init_mcm {
 
 # Download and Load PPA archive
 function load_ppa_archive {
-    wget -nv --continue ${user:+--user} ${user} ${password:+--password} ${password} \
+    if [[ ! -f /tmp/mcm.tgz ]]; then
+        wget -nv --continue ${user:+--user} ${user} ${password:+--password} ${password} \
         -O /tmp/mcm.tgz "${location}"
-    if [[ $? -gt 0 ]]; then
-        /bin/echo "Error downloading ${location}" >&2
-        exit 1
-    fi
 
+        if [[ $? -gt 0 ]]; then
+            /bin/echo "Error downloading ${location}" >&2
+            exit 1
+        fi
+    fi
     cd /tmp/
     tar -zxvf mcm.tgz
     mcm_file="/tmp/mcm-${ICP_VERSION}/mcm"
