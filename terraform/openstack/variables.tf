@@ -106,10 +106,10 @@ variable "icp_default_admin_password" {
 # ${icp_enabled_services} will take preference for repeated values
 variable "icp_disabled_services" {
     type = "list"
-    description = "List of ICP services to disable (e.g., istio, monitoring or metering)"
+    description = "List of ICP services to disable (e.g. istio, monitoring or metering)"
     default = [
         "istio", "vulnerability-advisor", "storage-glusterfs", "storage-minio",
-        "platform-security-netpolst", "node-problem-detector-draino",
+        "platform-security-netpols", "node-problem-detector-draino",
         "multicluster-hub", "multicluster-endpoint"
     ]
 }
@@ -185,5 +185,11 @@ variable "cam_download_user" {
 }
 
 variable "cam_download_password" {
+    default = ""
+}
+
+#Variable required to set the desired SMT level for master node
+variable "smt_value_master" {
+    description = "Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8"
     default = ""
 }

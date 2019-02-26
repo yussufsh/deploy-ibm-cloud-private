@@ -15,6 +15,24 @@
 #
 ################################################################
 
+#Allow SMT levels to be set for the master node
+if [ "${icp_architecture}" == "ppc64le" ] && [ ! -z "${smt_value_master}" ] && [ -f /usr/sbin/ppc64_cpu ]; then
+    /usr/sbin/ppc64_cpu --smt=${smt_value_master}
+    cat >> /etc/systemd/system/smt.service <<EOL
+[Unit]
+Description=Set SMT
+After=syslog.target
+[Service]
+Type=simple
+ExecStart=/usr/sbin/ppc64_cpu --smt=${smt_value_master}
+TimeoutSec=300
+[Install]
+WantedBy=multi-user.target
+EOL
+    /bin/systemctl daemon-reload
+    /bin/systemctl enable smt.service
+fi
+
 # Determine icp version
 IFS='.' read -r -a iver <<< ${icp_version}
 # fill in any empty digits (some only had 3)
@@ -188,7 +206,6 @@ cp cluster/config.yaml cluster/config_back.yaml
 if [ -n "${install_user_password}" ]; then
     /bin/sed -i 's/.*ansible_become_password:.*/ansible_become_password: "'${install_user_password}'"/g' cluster/config.yaml
 fi
-
 # For each service remove default entry and add again under management_services
 IFS=',' read -r -a disabled_services <<< "${icp_disabled_services}"
 IFS=',' read -r -a enabled_services <<< "${icp_enabled_services}"
@@ -210,10 +227,6 @@ fi
 if [ -n "$master_pub_ip" ]; then
     /bin/sed -i 's/.*cluster_lb_address:.*/cluster_lb_address: '$master_pub_ip'/g' cluster/config.yaml
 fi
-if [ -n "${icp_default_admin_password}" ]; then
-    /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
-fi
-
 
 # Setup the private key for the ICP cluster (injected at deploy time)
 /bin/cp /tmp/id_rsa.terraform \
