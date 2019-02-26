@@ -219,9 +219,6 @@ done
 if [ -n "${icp_default_admin_password}" ]; then
     /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
 fi
-if [ -n "${icp_default_admin_password}" ]; then
-    /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
-fi
 
 # Setup the private key for the ICP cluster (injected at deploy time)
 /bin/cp /tmp/id_rsa.terraform \
