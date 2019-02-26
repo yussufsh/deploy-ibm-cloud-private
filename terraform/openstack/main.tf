@@ -148,8 +148,8 @@ resource "null_resource" "icp-worker-scaler" {
         source      = "${path.module}/icp_worker_scaler.sh"
         destination = "/tmp/icp_worker_scaler.sh"
     }
-    
-    provisioner "file" {
+
+provisioner "file" {
         content     = "${openstack_compute_floatingip_associate_v2.master_pub_ip.0.floating_ip}"
         destination = "/tmp/icp_master_nodes.txt"
     }
