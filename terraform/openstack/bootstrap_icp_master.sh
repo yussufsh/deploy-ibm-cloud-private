@@ -15,6 +15,24 @@
 #
 ################################################################
 
+#Allow SMT levels to be set for the master node
+if [ "${icp_architecture}" == "ppc64le" ] && [ ! -z "${smt_value_master}" ] && [ -f /usr/sbin/ppc64_cpu ]; then
+    /usr/sbin/ppc64_cpu --smt=${smt_value_master}
+    cat >> /etc/systemd/system/smt.service <<EOL
+[Unit]
+Description=Set SMT
+After=syslog.target
+[Service]
+Type=simple
+ExecStart=/usr/sbin/ppc64_cpu --smt=${smt_value_master}
+TimeoutSec=300
+[Install]
+WantedBy=multi-user.target
+EOL
+    /bin/systemctl daemon-reload
+    /bin/systemctl enable smt.service
+fi
+
 # Determine icp version
 IFS='.' read -r -a iver <<< ${icp_version}
 # fill in any empty digits (some only had 3)
@@ -183,11 +201,23 @@ done
 if [ -n "${install_user_password}" ]; then
     /bin/sed -i 's/.*ansible_become_password:.*/ansible_become_password: "'${install_user_password}'"/g' cluster/config.yaml
 fi
-if [ -n "${icp_disabled_services}" ]; then
-    /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ ${icp_disabled_services} ]/g' cluster/config.yaml
-else
-    /bin/sed -i 's/.*disabled_management_services:.*/disabled_management_services: [ "" ]/g' cluster/config.yaml
-
+# For each service remove default entry and add again under management_services
+IFS=',' read -r -a disabled_services <<< "${icp_disabled_services}"
+IFS=',' read -r -a enabled_services <<< "${icp_enabled_services}"
+for element in $${disabled_services[*]}; do
+    if [ -n "$element" ]; then
+        /bin/sed -i "/^  $element: /d" cluster/config.yaml
+        /bin/sed -i "/management_services/a\\ \\ $element: disabled" cluster/config.yaml
+    fi
+done
+for element in $${enabled_services[*]}; do
+    if [ -n "$element" ]; then
+        /bin/sed -i "/^  $element: /d" cluster/config.yaml
+        /bin/sed -i "/management_services/a\\ \\ $element: enabled" cluster/config.yaml
+    fi
+done
+if [ -n "${icp_default_admin_password}" ]; then
+    /bin/sed -i 's/.*default_admin_password:.*/default_admin_password: '${icp_default_admin_password}'/g' cluster/config.yaml
 fi
 
 # Setup the private key for the ICP cluster (injected at deploy time)
@@ -203,18 +233,18 @@ cd "$ICP_ROOT_DIR/cluster"
 
 if [ ! -z ${mcm_download_location} ]; then
     chmod a+x /tmp/install_mcm.sh
-    /tmp/install_mcm.sh $IP ${icp_version} ${mcm_download_location} \
+    /tmp/install_mcm.sh $IP ${icp_version} ${icp_default_admin_password} ${mcm_download_location} \
         ${mcm_download_user} ${mcm_download_password} | \
         /usr/bin/tee mcm_install.log
 fi
 
 if [ ! -z ${cam_docker_user} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${cam_docker_user} ${cam_docker_password} \
+    /tmp/install_cam.sh ONLINE $IP ${cam_version} ${icp_default_admin_password} ${cam_docker_user} ${cam_docker_password} \
         ${cam_product_id} | /usr/bin/tee cam_install.log
 elif [ ! -z ${cam_download_location} ]; then
     chmod a+x /tmp/install_cam.sh
-    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${cam_download_location} \
+    /tmp/install_cam.sh OFFLINE $IP ${cam_version} ${icp_default_admin_password} ${cam_download_location} \
         ${cam_download_user} ${cam_download_password} ${cam_product_id} | \
         /usr/bin/tee cam_install.log
 fi

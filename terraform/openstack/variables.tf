@@ -98,12 +98,26 @@ variable "icp_download_location" {
     default = "http://LOCATION_OF_ICP_ENTERPRISE_EDITION.tar.gz"
 }
 
+variable "icp_default_admin_password" {
+    description = "Password to use for default admin user"
+    default = "S3cure-icp-admin-passw0rd-default"
+}
+
+# ${icp_enabled_services} will take preference for repeated values
 variable "icp_disabled_services" {
     type = "list"
-    description = "List of ICP services to disable (e.g., va, monitoring or metering)"
+    description = "List of ICP services to disable (e.g. istio, monitoring or metering)"
     default = [
-	"va"
+        "istio", "vulnerability-advisor", "storage-glusterfs", "storage-minio",
+        "platform-security-netpols", "node-problem-detector-draino",
+        "multicluster-hub", "multicluster-endpoint"
     ]
+}
+
+variable "icp_enabled_services" {
+    type = "list"
+    description = "List of ICP services to enable (e.g., istio, monitoring or metering)"
+    default = []
 }
 
 variable "instance_prefix" {
@@ -171,5 +185,11 @@ variable "cam_download_user" {
 }
 
 variable "cam_download_password" {
+    default = ""
+}
+
+#Variable required to set the desired SMT level for master node
+variable "smt_value_master" {
+    description = "Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8"
     default = ""
 }

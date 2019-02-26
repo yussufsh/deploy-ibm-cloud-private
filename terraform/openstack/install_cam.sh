@@ -37,8 +37,8 @@ function init_cam {
 
     helm init --client-only
     cloudctl login -a https://${HUB_CLUSTER_IP}:8443 \
-        --skip-ssl-validation -u admin -p admin -n services
-    docker login mycluster.icp:8500 -u admin -p admin
+        --skip-ssl-validation -u admin -p ${icp_default_admin_password} -n services
+    docker login mycluster.icp:8500 -u admin -p ${icp_default_admin_password}
 }
 
 # Create Docker Store secret
@@ -155,13 +155,14 @@ function install_cam {
 METHOD=$1
 HUB_CLUSTER_IP=$2
 VERSION=$3
+icp_default_admin_password=$4
 
 /bin/echo
 /bin/echo "Installing CAM.."
 if [ $METHOD == "ONLINE" ]; then
-    docker_user=$4
-    docker_password=$5
-    product_id=$6
+    docker_user=$5
+    docker_password=$6
+    product_id=$7
     init_cam
     create_docker_secret
     add_ibm_chart_repos
@@ -169,10 +170,10 @@ if [ $METHOD == "ONLINE" ]; then
     generate_deployment_key
     install_cam
 else
-    location=$4
-    user=$5
-    password=$6
-    product_id=$7
+    location=$5
+    user=$6
+    password=$7
+    product_id=$8
     init_cam
     load_ppa_archive
     create_persistent_volumes
