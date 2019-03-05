@@ -53,7 +53,7 @@ if [ -f /etc/redhat-release ]; then
     systemctl disable firewalld
     # Make sure we're not running some old version of docker
     yum -y remove docker docker-engine docker.io
-    yum -y install socat
+    yum -y install socat moreutils
     # Either install the icp docker version or from the repo
     if [ ! -z ${docker_download_location} ]; then
         TMP_DIR="$(/bin/mktemp -d)"
@@ -70,7 +70,7 @@ elif [ -f /etc/SuSE-release ]; then
     systemctl stop SuSEfirewall2
     systemctl disable SuSEfirewall2
     zypper -n remove docker docker-engine docker.io
-    zypper -n install socat
+    zypper -n install socat moreutils
     if [ ! -z ${docker_download_location} ]; then
         TMP_DIR="$(/bin/mktemp -d)"
         cd "$TMP_DIR"
@@ -90,7 +90,7 @@ else
     /usr/bin/apt-get --assume-yes purge docker
     /usr/bin/apt-get --assume-yes purge docker-engine
     /usr/bin/apt-get --assume-yes purge docker.io
-    /usr/bin/apt-get --assume-yes install apt-transport-https \
+    /usr/bin/apt-get --assume-yes install apt-transport-https moreutils\
     ca-certificates curl software-properties-common python python-pip
     if [ ! -z ${docker_download_location} ]; then
         TMP_DIR="$(/bin/mktemp -d)"
@@ -110,5 +110,7 @@ else
         /usr/bin/apt-get --assume-yes install docker-ce
     fi
 fi
+
+touch /tmp/CLOUDINIT_DONE
 
 exit 0

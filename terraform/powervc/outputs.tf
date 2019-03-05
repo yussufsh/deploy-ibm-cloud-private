@@ -20,16 +20,16 @@
 # Yussuf Shaikh <yussuf@us.ibm.com> - Initial implementation.
 #
 ################################################################
-#output "icp-master-vm-pub-ip" {
+#output "icp_master_vm-pub-ip" {
 #    value = "${openstack_compute_floatingip_associate_v2.master_pub_ip.0.floating_ip}"
 #}
 
-output "icp-master-vm-ip" {
-    value = "${openstack_compute_instance_v2.icp-master-vm.network.0.fixed_ip_v4}"
+output "icp_master_vm_ip" {
+    value = "${openstack_compute_instance_v2.icp_master_vm.network.0.fixed_ip_v4}"
 }
 
-output "icp-worker-vm-ips" {
-    value = "${openstack_compute_instance_v2.icp-worker-vm.*.network.0.fixed_ip_v4}"
+output "icp_worker_vm_ips" {
+    value = "${openstack_compute_instance_v2.icp_worker_vm.*.network.0.fixed_ip_v4}"
 }
 
 output "icp_default_admin_password" {

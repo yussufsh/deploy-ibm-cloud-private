@@ -91,4 +91,6 @@ else
     fi
 fi
 
+touch /tmp/CLOUDINIT_DONE
+
 exit 0

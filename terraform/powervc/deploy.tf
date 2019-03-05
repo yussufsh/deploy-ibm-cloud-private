@@ -41,11 +41,11 @@ locals {
 module "icpprovision" {
     source                  = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.8"
 
-    icp-master              = ["${openstack_compute_instance_v2.icp-master-vm.network.0.fixed_ip_v4}"]
-    icp-worker              = ["${openstack_compute_instance_v2.icp-worker-vm.*.network.0.fixed_ip_v4}"]
-    icp-proxy               = ["${openstack_compute_instance_v2.icp-master-vm.network.0.fixed_ip_v4}"]
+    icp-master              = ["${openstack_compute_instance_v2.icp_master_vm.network.0.fixed_ip_v4}"]
+    icp-worker              = ["${openstack_compute_instance_v2.icp_worker_vm.*.network.0.fixed_ip_v4}"]
+    icp-proxy               = ["${openstack_compute_instance_v2.icp_master_vm.network.0.fixed_ip_v4}"]
 
-    cluster_size            = "${openstack_compute_instance_v2.icp-master-vm.count + openstack_compute_instance_v2.icp-worker-vm.count}"
+    cluster_size            = "${openstack_compute_instance_v2.icp_master_vm.count + openstack_compute_instance_v2.icp_worker_vm.count}"
 
     icp_configuration       = "${local.config}"
 
@@ -69,4 +69,24 @@ module "icpprovision" {
         preinstall = ["echo 'DEBUG: preinstall'"]
         postinstall = ["echo 'DEBUG: postinstall'"]
     }
+}
+
+module "mcm_install" {
+    source                  = "./mcm"
+
+    icp_status              = "${module.icpprovision.install_complete}"
+    ssh_user                = "${var.icp_install_user}"
+    ssh_key_base64          = "${base64encode(file(var.openstack_ssh_key_file))}"
+    ssh_agent               = "false"
+    icp_master              = "${openstack_compute_instance_v2.icp_master_vm.network.0.fixed_ip_v4}"
+    icp_version             = "${var.icp_version}"
+    cluster_name            = "mycluster"
+    icp_admin_user          = "admin"
+    icp_admin_user_password = "${module.icpprovision.default_admin_password}"
+    mcm_secret              = "secret"
+    mcm_namespace           = "mcm"
+    mcm_cluster_namespace   = "cmcm"
+    mcm_download_location   = "${var.mcm_download_location}"
+    mcm_download_user       = "${var.mcm_download_user}"
+    mcm_download_password   = "${var.mcm_download_password}"
 }

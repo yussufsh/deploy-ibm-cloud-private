@@ -24,7 +24,7 @@
 ################################################################
 # Create Master Nodes
 ################################################################
-resource "openstack_compute_instance_v2" "icp-master-vm" {
+resource "openstack_compute_instance_v2" "icp_master_vm" {
     name      = "${var.instance_prefix}-master-${random_id.rand.hex}"
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_master_node}"
@@ -36,7 +36,7 @@ resource "openstack_compute_instance_v2" "icp-master-vm" {
 }
 
 data "template_file" "bootstrap_init" {
-    template = "${file("bootstrap_icp_master.sh")}"
+    template = "${file("scripts/bootstrap_icp_master.sh")}"
     vars {
         icp_architecture = "${var.icp_architecture}"
         docker_download_location = "${var.docker_download_location}"
@@ -44,17 +44,18 @@ data "template_file" "bootstrap_init" {
     }
 }
 
-resource "null_resource" "wait-for-master" {
+resource "null_resource" "wait_for_master" {
     provisioner "remote-exec" {
         connection {
-            type        = "ssh"
+            host        = "${openstack_compute_instance_v2.icp_master_vm.network.0.fixed_ip_v4}"
             user        = "${var.icp_install_user}"
             private_key = "${file(var.openstack_ssh_key_file)}"
-            host        = "${openstack_compute_instance_v2.icp-master-vm.*.network.0.fixed_ip_v4}"
-            timeout         = "15m"
+            agent       = "false"
+            timeout     = "15m"
         }
+
         inline = [
-            "echo DONE"
+          "while [ ! -f /tmp/CLOUDINIT_DONE ]; do sleep 5; done",
         ]
     }
 }
@@ -62,8 +63,10 @@ resource "null_resource" "wait-for-master" {
 ################################################################
 # Create Worker Nodes
 ################################################################
-resource "openstack_compute_instance_v2" "icp-worker-vm" {
+resource "openstack_compute_instance_v2" "icp_worker_vm" {
     count     = "${var.icp_num_workers}"
+    depends_on = ["null_resource.wait_for_master"]
+
     name      = "${format("${var.instance_prefix}-worker-${random_id.rand.hex}-%02d", count.index+1)}"
     image_id  = "${var.openstack_image_id}"
     flavor_id = "${var.openstack_flavor_id_worker_node}"
@@ -72,10 +75,24 @@ resource "openstack_compute_instance_v2" "icp-worker-vm" {
         name = "${var.openstack_network_name}"
     }
     user_data = "${data.template_file.bootstrap_worker.rendered}"
+
+    provisioner "remote-exec" {
+        connection {
+            host          = "${self.access_ip_v4}"
+            user          = "${var.icp_install_user}"
+            private_key   = "${file(var.openstack_ssh_key_file)}"
+            agent         = "false"
+            timeout     = "15m"
+        }
+
+        inline = [
+          "while [ ! -f /tmp/CLOUDINIT_DONE ]; do sleep 5; done",
+        ]
+    }
 }
 
 data "template_file" "bootstrap_worker" {
-    template = "${file("bootstrap_icp_worker.sh")}"
+    template = "${file("scripts/bootstrap_icp_worker.sh")}"
     vars {
         docker_download_location = "${var.docker_download_location}"
     }
