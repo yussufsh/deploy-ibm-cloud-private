@@ -32,6 +32,10 @@ function clean_mcm {
     helm init --client-only
     cloudctl login -a https://${HUB_CLUSTER_IP}:8443 \
         --skip-ssl-validation -u ${icp_admin_user} -p ${icp_admin_user_password} -n kube-system
+
+    export MCM_HELM_RELEASE_NAME=mcm-release
+    helm del --purge ${MCM_HELM_RELEASE_NAME} --timeout 1800 --tls
+
     cloudctl catalog delete-chart --name ibm-mcm-prod
     cloudctl catalog delete-chart --name ibm-mcmk-prod
 
@@ -39,8 +43,6 @@ function clean_mcm {
     kubectl delete namespace ${mcm_namespace}
     kubectl delete namespace ${mcm_cluster_namespace}
 
-    export MCM_HELM_RELEASE_NAME=myhelmmcm
-    helm del --purge ${MCM_HELM_RELEASE_NAME}
 }
 
 

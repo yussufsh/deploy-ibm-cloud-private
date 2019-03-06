@@ -21,8 +21,19 @@
 #
 ################################################################
 
+
+resource "null_resource" "mcm_install_wait" {
+    count   = "${var.mcm_download_location == "" ? 0 : 1}"
+    provisioner "local-exec" {
+        command = "echo ICP install complete status is ${var.icp_status}"
+    }
+}
+
+
 resource "null_resource" "mcm_install" {
     count   = "${var.mcm_download_location == "" ? 0 : 1}"
+    depends_on = ["null_resource.mcm_install_wait"]
+
     connection {
         host          = "${var.icp_master}"
         user          = "${var.ssh_user}"
@@ -30,13 +41,19 @@ resource "null_resource" "mcm_install" {
         agent         = "${var.ssh_agent}"
     }
 
+    provisioner "remote-exec" {
+        when = "destroy"
+        inline = [
+          "echo destroy"
+        ]
+    }
     provisioner "file" {
         source = "${path.module}/scripts/mcm_install.sh"
         destination = "/tmp/mcm_install.sh"
     }
 
     provisioner "file" {
-        when = "destroy"  
+        when = "destroy"
         source = "${path.module}/scripts/mcm_cleanup.sh"
         destination = "/tmp/mcm_cleanup.sh"
     }
@@ -55,4 +72,4 @@ resource "null_resource" "mcm_install" {
           "bash -c '/tmp/mcm_cleanup.sh ${var.icp_master} ${var.icp_admin_user} ${var.icp_admin_user_password} ${var.mcm_secret} ${var.mcm_namespace} ${var.mcm_cluster_namespace}'"
         ]
     }
-} 
+}

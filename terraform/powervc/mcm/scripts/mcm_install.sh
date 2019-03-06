@@ -66,7 +66,7 @@ function load_ppa_archive {
 # Create MCM namespace and Tiller secret
 function create_namespace_n_secret {
     
-    if ! kubectl get secret ${mcm_secret}; then
+    if ! kubectl get secret ${mcm_secret} &> /dev/null; then
         kubectl create secret tls ${mcm_secret} \
             --cert ~/.helm/cert.pem --key ~/.helm/key.pem -n kube-system
     else
@@ -98,7 +98,7 @@ function install_mcm {
 
     export MCM_HELM_RELEASE_NAME=mcm-release
     helm install --name=${MCM_HELM_RELEASE_NAME} \
-        --namespace kube-system \
+        --timeout 1800 --namespace kube-system \
         --set compliance.mcmNamespace=${mcm_namespace} \
         --set klusterlet.enabled=true \
         --set topology.enabled=true \
