@@ -99,6 +99,7 @@ Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_d
 |cam_download_password|-|string|Optional password if authentication required for CAM tarball|
 
 **Configure SMT level for master node**
+
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |smt_value_master||string|Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8|
