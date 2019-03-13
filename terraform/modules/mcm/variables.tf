@@ -18,6 +18,10 @@ variable "ssh_agent" {
     default = "false"
 }
 
+variable "bastion_host" {
+    default = ""
+}
+
 variable "icp_version" {
     default = ""
 }
@@ -51,9 +55,9 @@ variable "mcm_download_location" {
 }
 
 variable "mcm_download_user" {
-    default = ""
+    default = "-"
 }
 
 variable "mcm_download_password" {
-    default = ""
+    default = "-"
 }

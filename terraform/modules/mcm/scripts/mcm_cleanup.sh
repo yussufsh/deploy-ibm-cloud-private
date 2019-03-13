@@ -35,6 +35,11 @@ function clean_mcm {
 
     export MCM_HELM_RELEASE_NAME=mcm-release
     helm del --purge ${MCM_HELM_RELEASE_NAME} --timeout 1800 --tls
+    kubectl delete pod --grace-period=0 --force --namespace kube-system -l release=${MCM_HELM_RELEASE_NAME}
+
+    export MCMK_HELM_RELEASE_NAME=mcmk-release
+    helm del --purge ${MCMK_HELM_RELEASE_NAME} --timeout 1800 --tls
+    kubectl delete pod --grace-period=0 --force --namespace kube-system -l release=${MCMK_HELM_RELEASE_NAME}
 
     cloudctl catalog delete-chart --name ibm-mcm-prod
     cloudctl catalog delete-chart --name ibm-mcmk-prod
@@ -42,7 +47,6 @@ function clean_mcm {
     kubectl delete secret ${helm_secret} -n kube-system
     kubectl delete namespace ${mcm_namespace}
     kubectl delete namespace ${mcm_cluster_namespace}
-
 }
 
 

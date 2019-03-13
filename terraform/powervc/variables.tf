@@ -136,16 +136,6 @@ variable "docker_download_location" {
     default = ""
 }
 
-#variable "openstack_floating_network_name" {
-#    default = "admin_floating_net"
-#}
-#variable "openstack_availability_zone" {
-#    default = "power"
-#}
-#variable "openstack_security_groups" {
-#    default = ["default", "icp-rules"]
-#}
-
 
 ################################################################
 # Configure MCM details
@@ -155,11 +145,11 @@ variable "mcm_download_location" {
 }
 
 variable "mcm_download_user" {
-    default = ""
+    default = "-"
 }
 
 variable "mcm_download_password" {
-    default = ""
+    default = "-"
 }
 
 
@@ -197,11 +187,11 @@ variable "cam_download_location" {
 }
 
 variable "cam_download_user" {
-    default = ""
+    default = "-"
 }
 
 variable "cam_download_password" {
-    default = ""
+    default = "-"
 }
 
 ################################################################

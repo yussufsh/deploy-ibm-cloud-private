@@ -41,6 +41,8 @@ function init_mcm {
 # Download and Load PPA archive
 function load_ppa_archive {
     if [[ ! -f /tmp/mcm.tgz ]]; then
+        if [[ "${user}" == "-" ]]; then user=""; fi
+        if [[ "${password}" == "-" ]]; then password=""; fi
         wget -nv --continue ${user:+--user} ${user} ${password:+--password} ${password} \
             -O /tmp/mcm.tgz "${location}"
         if [[ $? -gt 0 ]]; then
@@ -60,7 +62,6 @@ function load_ppa_archive {
 
     cloudctl catalog load-ppa-archive -a ${mcm_file} \
         --registry ${cluster_name}.icp:8500/kube-system
-    ls /etc/docker/certs.d/
 }
 
 # Create MCM namespace and Tiller secret
@@ -91,17 +92,31 @@ function add_ibm_chart_repos {
 
 # Install MultiCloud Manager
 function install_mcm {
+    export MCM_HELM_RELEASE_NAME=mcm-release
+    helm upgrade --install ${MCM_HELM_RELEASE_NAME} \
+        --timeout 1800 --namespace kube-system \
+        --set compliance.mcmNamespace=${mcm_namespace} \
+        --set topology.enabled=true \
+        ${CHARTNAME} --tls \
+        --ca-file ~/.helm/ca.pem --cert-file ~/.helm/cert.pem --key-file ~/.helm/key.pem
+    if [[ $? -gt 0 ]]; then
+        /bin/echo "MCM installation failed" >&2
+        exit 1
+    fi
+}
+
+# Install MCM Klusterlet
+function install_mcm_klusterlet {
     export HUB_CLUSTER_URL=`kubectl config view -o \
         jsonpath="{.clusters[?(@.name==\"${cluster_name}\")].cluster.server}"`
     export HUB_CLUSTER_TOKEN=`kubectl config view -o \
         jsonpath="{.users[?(@.name==\"${cluster_name}-user\")].user.token}"`
+    CHARTNAME=local-charts/ibm-mcmk-prod
 
-    export MCM_HELM_RELEASE_NAME=mcm-release
-    helm install --name=${MCM_HELM_RELEASE_NAME} \
+    export MCMK_HELM_RELEASE_NAME=mcmk-release
+    helm upgrade --install ${MCMK_HELM_RELEASE_NAME} \
         --timeout 1800 --namespace kube-system \
-        --set compliance.mcmNamespace=${mcm_namespace} \
         --set klusterlet.enabled=true \
-        --set topology.enabled=true \
         --set klusterlet.clusterName=${cluster_name} \
         --set klusterlet.clusterNamespace=${mcm_cluster_namespace} \
         --set klusterlet.tillersecret=${mcm_secret} \
@@ -110,7 +125,7 @@ function install_mcm {
         ${CHARTNAME} --tls \
         --ca-file ~/.helm/ca.pem --cert-file ~/.helm/cert.pem --key-file ~/.helm/key.pem
     if [[ $? -gt 0 ]]; then
-        /bin/echo "MCM installation failed" >&2
+        /bin/echo "MCM Klusterlet installation failed" >&2
         exit 1
     fi
 }
@@ -145,6 +160,6 @@ load_ppa_archive
 create_namespace_n_secret
 add_ibm_chart_repos
 install_mcm
+install_mcm_klusterlet
 install_mcm_cli
 /bin/echo "MCM installation completed"
-

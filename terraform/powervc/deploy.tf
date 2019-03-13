@@ -72,7 +72,7 @@ module "icpprovision" {
 }
 
 module "mcm_install" {
-    source                  = "./mcm"
+    source                  = "../modules/mcm"
 
     icp_status              = "${module.icpprovision.install_complete}"
     ssh_user                = "${var.icp_install_user}"
@@ -89,4 +89,25 @@ module "mcm_install" {
     mcm_download_location   = "${var.mcm_download_location}"
     mcm_download_user       = "${var.mcm_download_user}"
     mcm_download_password   = "${var.mcm_download_password}"
+}
+
+module "cam_install" {
+    source                  = "../modules/cam"
+
+    icp_status              = "${module.icpprovision.install_complete}"
+    ssh_user                = "${var.icp_install_user}"
+    ssh_key_base64          = "${base64encode(file(var.openstack_ssh_key_file))}"
+    ssh_agent               = "false"
+    icp_master              = "${openstack_compute_instance_v2.icp_master_vm.network.0.fixed_ip_v4}"
+    cluster_name            = "mycluster"
+    icp_admin_user          = "admin"
+    icp_admin_user_password = "${module.icpprovision.default_admin_password}"
+    cam_version             = "${var.cam_version}"
+    cam_docker_user         = "${var.cam_docker_user}"
+    cam_docker_password     = "${var.cam_docker_password}"
+    cam_docker_secret       = "camdockersecret"
+    cam_download_location   = "${var.cam_download_location}"
+    cam_download_user       = "${var.cam_download_user}"
+    cam_download_password   = "${var.cam_download_password}"
+    cam_product_id          = "${var.cam_product_id}"
 }
