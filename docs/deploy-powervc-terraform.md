@@ -33,8 +33,9 @@ Instructions
 4. Edit the contents of variables.tf to align with your OpenStack (or PowerVC) deployment. (see Inputs section below)
 5. Run terraform init to initialize and download the terraform modules needed for deployment.
 6. Run [terraform apply] to start the ICP deployment to the OpenStack server.
-7. Wait for installation to complete.
-Within about 30-40 minutes, you should be able to access your ICP cluster at https://<ICP_MASTER_IP_ADDRESS>:8443
+7. Wait about 30-40 minutes, you should be able to access your ICP cluster at https://<ICP_MASTER_IP_ADDRESS>:8443
+
+See [Accessing IBM Cloud](https://github.com/yussufsh/deploy-ibm-cloud-private/blob/hdcw/README.md#accessing-ibm-cloud-private) Private for next steps.
 
 Inputs
 ------------
@@ -103,6 +104,17 @@ Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_d
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |smt_value_master||string|Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8|
+
+Additional Information
+------------
+* There are multiple ways to pass input variables to Terraform module. See [docs](https://www.terraform.io/docs/configuration/variables.html#assigning-values-to-root-module-variables) for more information.
+* You can re-install MCM from the cluster using below commands.
+<br/>`terraform destroy -target=null_resource.mcm_install`
+<br/>`terraform apply`
+* You can re-install CAM from the cluster using below commands.
+<br/>`terraform destroy -target=null_resource.cam_install`
+<br/>`terraform apply`
+
 
 Authors
 ------------
