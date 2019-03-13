@@ -74,7 +74,7 @@ module "icpprovision" {
 }
 
 module "mcm_install" {
-    source                  = "./modules/mcm"
+    source                  = "../modules/mcm"
 
     icp_status              = "${module.icpprovision.install_complete}"
     ssh_user                = "${var.icp_install_user}"
@@ -95,7 +95,7 @@ module "mcm_install" {
 }
 
 module "cam_install" {
-    source                  = "./modules/cam"
+    source                  = "../modules/cam"
 
     icp_status              = "${module.icpprovision.install_complete}"
     ssh_user                = "${var.icp_install_user}"
