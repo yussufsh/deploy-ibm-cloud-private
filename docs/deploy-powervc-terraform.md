@@ -71,14 +71,37 @@ Inputs
 |icp_architecture|ppc64le|string|x86 or ppc64le|
 |icp_download_location||string|HTTP wget location for ICP Enterprise Edition - ignored for community edition|
 |icp_default_admin_password|S3cure-icp-admin-passw0rd-default|string|Password to use for default admin user|
-|icp_management_services|{
-        "istio" = "disabled"
-        "metering" = "enabled"
-    }|map|Map of management services to enable/disable in icp config.yaml|
+|icp_management_services|{<br/>"istio" = "disabled"<br/> "metering" = "enabled"<br/>}|map|Map of management services to enable/disable in icp config.yaml|
 |docker_download_location||string|HTTP wget location for ICP provided Docker package|
-|||string||
-|||string||
-|||string||
+
+**Configure MCM details**
+This is an optional component to install on top of ICP.
+Will enable if *mcm_download_location* is provided in input variables.
+
+| Name | Default | Type | Description |
+|--------------------|---------------|--------|----------------------------------------|
+|mcm_download_location||string|HTTP wget location for MCM tarball|
+|mcm_download_user|-|string|Optional username if authentication required for MCM tarball|
+|mcm_download_password|-|string|Optional password if authentication required for MCM tarball|
+
+**Configure CAM common details**
+This is an optional component to install on top of ICP.
+Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_download_location* is provided for *Offline Installation* in input variables. *cam_docker_user* should be empty string for *Offline Installation*.
+
+| Name | Default | Type | Description |
+|--------------------|---------------|--------|----------------------------------------|
+|cam_version|3.1.0|string|Manditory version of Cloud Automation Manager to install|
+|cam_product_id||string|Product Id text for Cloud Automation Manager (EE)|
+|cam_docker_user||string|Docker Store user name, needs subscription to CAM (see documentation)|
+|cam_docker_password||string|Docker Store API key OR password|
+|cam_download_location||string|HTTP wget location for CAM tarball|
+|cam_download_user|-|string|Optional username if authentication required for CAM tarball|
+|cam_download_password|-|string|Optional password if authentication required for CAM tarball|
+
+**Configure SMT level for master node**
+| Name | Default | Type | Description |
+|--------------------|---------------|--------|----------------------------------------|
+|smt_value_master||string|Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8|
 
 Authors
 ------------
