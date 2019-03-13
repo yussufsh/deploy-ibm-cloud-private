@@ -71,4 +71,3 @@ clean_cam
 delete_deployment_key
 delete_persistent_volumes
 /bin/echo "CAM cleaning completed"
-

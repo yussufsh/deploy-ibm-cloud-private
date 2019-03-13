@@ -39,7 +39,7 @@ resource "null_resource" "mcm_install" {
         user          = "${var.ssh_user}"
         private_key   = "${base64decode(var.ssh_key_base64)}"
         agent         = "${var.ssh_agent}"
-        bastion_host  = "${var.bastion_host}"
+	bastion_host  = "${var.bastion_host}"
     }
 
     provisioner "remote-exec" {

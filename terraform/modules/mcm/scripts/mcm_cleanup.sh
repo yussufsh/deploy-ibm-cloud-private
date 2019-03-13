@@ -62,4 +62,3 @@ mcm_cluster_namespace=$6
 
 clean_mcm
 /bin/echo "MCM cleaning completed"
-

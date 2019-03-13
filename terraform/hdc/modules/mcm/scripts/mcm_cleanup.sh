@@ -24,51 +24,42 @@
 ################################################################
 
 # Set HOME env var, populate systemArch, helm init and cloudctl login
-function clean_cam {
+function clean_mcm {
     export HOME=~
     cd $HOME
     export HELM_HOME=~/.helm
 
     helm init --client-only
     cloudctl login -a https://${HUB_CLUSTER_IP}:8443 \
-        --skip-ssl-validation -u ${icp_admin_user} -p ${icp_admin_user_password} -n services
+        --skip-ssl-validation -u ${icp_admin_user} -p ${icp_admin_user_password} -n kube-system
 
-    helm del --purge cam --timeout 1800 --tls
-    kubectl delete pod --grace-period=0 --force --namespace services -l release=cam
+    export MCM_HELM_RELEASE_NAME=mcm-release
+    helm del --purge ${MCM_HELM_RELEASE_NAME} --timeout 1800 --tls
+    kubectl delete pod --grace-period=0 --force --namespace kube-system -l release=${MCM_HELM_RELEASE_NAME}
 
-    kubectl delete secret ${cam_docker_secret} -n services
-}
+    export MCMK_HELM_RELEASE_NAME=mcmk-release
+    helm del --purge ${MCMK_HELM_RELEASE_NAME} --timeout 1800 --tls
+    kubectl delete pod --grace-period=0 --force --namespace kube-system -l release=${MCMK_HELM_RELEASE_NAME}
 
-# Install and configure exportfs; Create Persistent Volumes
-function delete_persistent_volumes {
-    pvs=( cam-mongo cam-logs cam-terraform cam-bpd-appdata )
-    dir_names=( db logs terraform BPD_appdata )
-    for ((i = 0; i < ${#pvs[@]}; ++i)); do
-        item=${pvs[${i}]}
-        kubectl delete pvc ${item}-pv
-        kubectl delete pv ${item}-pv
-    done
-    sudo sed -i '/\/cam_export*/d' /etc/exports
-}
+    cloudctl catalog delete-chart --name ibm-mcm-prod
+    cloudctl catalog delete-chart --name ibm-mcmk-prod
 
-# Delete a deployment ServiceID policies and API Key
-function delete_deployment_key {
-    export serviceIDName='service-deploy'
-    export serviceApiKeyName='service-deploy-api-key'
-    cloudctl iam service-id-delete ${serviceIDName} -f
+    kubectl delete secret ${helm_secret} -n kube-system
+    kubectl delete namespace ${mcm_namespace}
+    kubectl delete namespace ${mcm_cluster_namespace}
 }
 
 
 HUB_CLUSTER_IP=$1
 icp_admin_user=$2
 icp_admin_user_password=$3
-cam_docker_secret=$4
+helm_secret=$4
+mcm_namespace=$5
+mcm_cluster_namespace=$6
 
 /bin/echo
-/bin/echo "Cleaning CAM.."
+/bin/echo "Cleaning MCM.."
 
-clean_cam
-delete_deployment_key
-delete_persistent_volumes
-/bin/echo "CAM cleaning completed"
+clean_mcm
+/bin/echo "MCM cleaning completed"
 
