@@ -30,7 +30,7 @@ Instructions
 1. Login to your Terraform workstation.
 2. Clone this repository. (git clone git@github.com:IBM/deploy-ibm-cloud-private.git)
 3. Generate an SSH key pair. This will be referenced in Inputs below. (ssh-keygen -t rsa)
-4. Edit the contents of variables.tf to align with your OpenStack (or PowerVC) deployment. (see Inputs below)
+4. Edit the contents of variables.tf to align with your OpenStack (or PowerVC) deployment. (see Inputs section below)
 5. Run terraform init to initialize and download the terraform modules needed for deployment.
 6. Run [terraform apply] to start the ICP deployment to the OpenStack server.
 7. Wait for installation to complete.
@@ -64,7 +64,7 @@ Inputs
 
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
-|icp_install_user|ubuntu|string|The user with sudo access across nodes (users section of cloud-init)s|
+|icp_install_user|ubuntu|string|The user with sudo access across nodes (users section of cloud-init)|
 |icp_install_user_password||string|Password for sudo access (leave empty if using passwordless sudo access)|
 |icp_num_workers|1|string|The number of ICP worker nodes to provision|
 |icp_version|3.1.2|string|ICP version number|
