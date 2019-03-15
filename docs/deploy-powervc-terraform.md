@@ -37,7 +37,7 @@ Instructions
 7. Run `terraform apply` to start the ICP deployment to the OpenStack server.
 8. Wait for about 30-40 minutes. You should be able to access your ICP cluster at https://<ICP_MASTER_IP_ADDRESS>:8443
 
-See [Accessing IBM Cloud](https://github.com/yussufsh/deploy-ibm-cloud-private/blob/hdcw/README.md#accessing-ibm-cloud-private) Private for next steps.
+See [Accessing IBM Cloud Private](https://github.com/yussufsh/deploy-ibm-cloud-private/blob/hdcw/README.md#accessing-ibm-cloud-private) for next steps.
 
 [Inputs](#inputs)
 ------------
