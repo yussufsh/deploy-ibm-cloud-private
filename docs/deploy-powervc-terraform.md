@@ -117,8 +117,8 @@ Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_d
 <br/>`terraform destroy -target=null_resource.cam_install`
 <br/>`terraform apply`
 * **Destroy the cluster without waiting to uninstall MCM & CAM**:
-<br\>`terraform taint -module=mcm_install null_resource.mcm_install`
-<br\>`terraform taint -module=cam_install null_resource.cam_install`
+<br/>`terraform taint -module=mcm_install null_resource.mcm_install`
+<br/>`terraform taint -module=cam_install null_resource.cam_install`
 <br/>`terraform destroy`
 
 [Authors](#authors)
