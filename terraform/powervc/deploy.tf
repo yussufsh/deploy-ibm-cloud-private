@@ -57,9 +57,6 @@ module "icpprovision" {
     ssh_key_base64          = "${base64encode(file(var.openstack_ssh_key_file))}"
     ssh_agent               = "false"
 
-    # Docker is configured with local bootstrap files for all supported OS
-    #docker_package_location = "${var.docker_download_location}"
-    
     image_location = "${var.icp_download_location}"
 
     hooks = {
