@@ -13,6 +13,7 @@ Pre-requisites
 Supported OS versions
 ------------
 This Terraform deployment supports the following OS images on different platforms. Check ICP documentation for supported system configurations.
+
     * Ubuntu 18.04 LTS and 16.04 LTS
     * Red Hat Enterprise Linux (RHEL) 7.4, 7.5, and 7.6
     * SUSE Linux Enterprise Server (SLES) 12 SP3
