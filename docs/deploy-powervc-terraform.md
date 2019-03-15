@@ -31,7 +31,7 @@ Instructions
 2. Clone this repository. (git clone git@github.com:IBM/deploy-ibm-cloud-private.git)
 3. Run `cd deploy-ibm-cloud-private/terraform/powervc/` to change the directory.
 4. Run `ssh-keygen -t rsa` to generate an SSH key pair. This will be referenced in [Inputs](#inputs) below.
-5. Pass the [Input](#inputs) variables to align with your OpenStack (or PowerVC) deployment. (see [How To](#howto) section below)
+5. Pass the [Input](#inputs) variables to align with your OpenStack (or PowerVC) deployment. (see [How To](#how-to) section below)
 6. Run `terraform init` to initialize and download the terraform modules needed for deployment.
 7. Run `terraform apply` to start the ICP deployment to the OpenStack server.
 8. Wait for about 30-40 minutes. You should be able to access your ICP cluster at https://<ICP_MASTER_IP_ADDRESS>:8443
@@ -106,7 +106,7 @@ Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_d
 |--------------------|---------------|--------|----------------------------------------|
 |smt_value_master||string|Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8|
 
-[How-To](#howto)
+[How-To](#how-to)
 ------------
 * **Pass the variables**: There are multiple ways to pass input variables to Terraform module. See [docs](https://www.terraform.io/docs/configuration/variables.html#assigning-values-to-root-module-variables) for more information.
 * **Re-install MCM on the cluster**:
