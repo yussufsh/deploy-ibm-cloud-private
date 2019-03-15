@@ -115,4 +115,3 @@ module "cam_install" {
     cam_product_id          = "${var.cam_product_id}"
     bastion_host            = "${openstack_compute_floatingip_associate_v2.master_pub_ip.0.floating_ip}"
 }
-

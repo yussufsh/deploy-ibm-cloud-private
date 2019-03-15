@@ -151,14 +151,17 @@ variable "openstack_security_groups" {
 # Configure MCM details
 ################################################################
 variable "mcm_download_location" {
+    description = "HTTP wget location for MCM tarball"
     default = ""
 }
 
 variable "mcm_download_user" {
+    description = "Optional username if authentication required for MCM tarball"
     default = "-"
 }
 
 variable "mcm_download_password" {
+    description = "Optional password if authentication required for MCM tarball"
     default = "-"
 }
 
@@ -180,27 +183,30 @@ variable "cam_product_id" {
 # Configure CAM online installation details
 ################################################################
 variable "cam_docker_user" {
-    default = ""
     description = "Docker Store user name, needs subscription to CAM"
+    default = ""
 }
 
 variable "cam_docker_password" {
-    default = ""
     description = "Docker Store API key OR password"
+    default = ""
 }
 
 ################################################################
 # Configure CAM offline installation details (${cam_docker_user} needs to be empty)
 ################################################################
 variable "cam_download_location" {
+    description = "HTTP wget location for CAM tarball"
     default = ""
 }
 
 variable "cam_download_user" {
+    description = "Optional username if authentication required for CAM tarball"
     default = "-"
 }
 
 variable "cam_download_password" {
+    description = "Optional password if authentication required for CAM tarball"
     default = "-"
 }
 

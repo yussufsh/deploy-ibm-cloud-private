@@ -15,7 +15,8 @@ openstack_security_groups = ["default", "icp-rules"]
 openstack_availability_zone = "PowerKVM"
 instance_prefix = "yussuf-mcm"
 icp_version = "3.1.2"
-icp_edition = "ce"
+icp_edition = "ee"
+icp_download_location = "ftp://icp-offline-cache1.fyre.ibm.com/pub/icp-3.1.2/ibm-cloud-private-ppc64le-3.1.2.tar.gz"
 icp_install_user = "cloudusr"
 icp_disabled_services = [ "istio", "vulnerability-advisor", "storage-glusterfs", "storage-minio",
         "platform-security-netpolst", "node-problem-detector-draino",
