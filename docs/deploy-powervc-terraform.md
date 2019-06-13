@@ -1,6 +1,8 @@
 # Summary
 This Terraform module will perform a simple IBM Cloud Private (ICP) deployment. By default, it will install the Community Edition, but you can also configure it to install the Enterprise Edition as well. It is currently setup to deploy an ICP master node (also serves as the boot, proxy, and management node) and a user-configurable number of ICP worker nodes. This module serves as a simple way to provision an ICP cluster within your infrastructure.
 
+You can also install [IBM Multicloud Manager](#mcm) and [IBM Cloud Automation Manager](#cam) on the cluster by specifying additional input variables.
+
 For provisioning on OpenStack environment please look at [Deploy in Openstack using Terraform](deploy-openstack-terraform.md)
 
 ## Pre-requisites
@@ -78,13 +80,13 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |docker_download_location||string|HTTP wget location for ICP provided Docker package|
 
 
-### Configure IBM Multicloud Manager on IBM Cloud Private Version 3.2.0 and above
+### [Configure IBM Multicloud Manager on IBM Cloud Private Version 3.2.0 and above](#mcm)
 
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |mcm_install|false|string|Set value to "true" if you need to install MCM 3.2.0 and above|
 
-### Configure IBM Multicloud Manager on IBM Cloud Private Version 3.1.2 and below
+### [Configure IBM Multicloud Manager on IBM Cloud Private Version 3.1.2 and below](#mcm_old)
 
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
@@ -105,7 +107,7 @@ No need to specify below variables if Hub and Klusterlet are on the same cluster
 |mcm_hub_server_token||string|If mcm_klusterlet_only is true then Hub cluster Token|
 
 
-### Configure IBM Cloud Automation Manager
+### [Configure IBM Cloud Automation Manager](#cam)
 This is an optional component to install on top of ICP.
 Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_download_location* is provided for *Offline Installation* in input variables. *cam_docker_user* should be empty string for *Offline Installation*.
 
