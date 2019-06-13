@@ -70,7 +70,7 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |openstack_availability_zone|power|string|The name of Availability Zone for deploy operation|
 |openstack_security_groups|["default", "icp-rules"]|list|The list of security groups that exists on Openstack server for deploy operation|
 
-**Configure ICP details**
+**Configure IBM Cloud Private details**
 
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
@@ -78,25 +78,39 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |icp_install_user_password||string|Password for sudo access (leave empty if using passwordless sudo access)|
 |icp_version|3.1.2|string|ICP version number|
 |icp_download_location||string|HTTP wget location for ICP Enterprise Edition - ignored for community edition|
+|icp_download_location_user||string|Optional username for icp_download_location|
+|icp_download_location_password||string|Optional password for icp_download_location|
 |icp_default_admin_password|S3cure-icp-admin-passw0rd-default|string|Password to use for default admin user|
 |icp_management_services|{<br/>"istio" = "disabled"<br/> "metering" = "enabled"<br/>}|map|Map of management services to enable/disable in icp config.yaml|
 |icp_configuration|{}|map|Map of configuration values for ICP|
 |docker_download_location||string|HTTP wget location for ICP provided Docker package|
 
-**Configure MCM details**
-This is an optional component to install on top of ICP.
-Will enable only if *mcm_download_location* is provided in input variables.
+
+**Configure IBM Multicloud Manager on IBM Cloud Private Version 3.2.0 and above**
+
+| Name | Default | Type | Description |
+|--------------------|---------------|--------|----------------------------------------|
+|mcm_install|false|string|Set value to "true" if you need to install MCM 3.2.0 and above|
+
+**Configure IBM Multicloud Manager on IBM Cloud Private Version 3.1.2 and below**
 
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |mcm_download_location||string|HTTP wget location for MCM tarball|
 |mcm_download_user|-|string|Optional username if authentication required for MCM tarball|
 |mcm_download_password|-|string|Optional password if authentication required for MCM tarball|
-|mcm_klusterlet_only|false|string|true if need to install Klusterlet without the Hub cluster(remote)|
+
+**Configure IBM Multicloud Manager Klusterlet on the managed-cluster**
+
+No need to specify below variables if Hub and Klusterlet are on the same cluster (All-in-one installation).
+| Name | Default | Type | Description |
+|--------------------|---------------|--------|----------------------------------------|
+|mcm_klusterlet_only|false|string|Set to "true" if need to install Klusterlet without the Hub cluster(remote)|
 |mcm_klusterlet_name|mykluster|string|Name of the Klusterlet. Should be unique to each cluster|
 |mcm_namespace|mcm|string|Namespace (unique) on Klusterlet or Hub cluster depending on mcm_klusterlet_only flag|
 |mcm_hub_server_url||string|If mcm_klusterlet_only is true then Hub cluster URL|
 |mcm_hub_server_token||string|If mcm_klusterlet_only is true then Hub cluster Token|
+
 
 **Configure CAM common details**
 This is an optional component to install on top of ICP.
