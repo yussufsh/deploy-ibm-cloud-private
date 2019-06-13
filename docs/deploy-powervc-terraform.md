@@ -1,7 +1,7 @@
 # Summary
 This Terraform module will perform a simple IBM Cloud Private (ICP) deployment. By default, it will install the Community Edition, but you can also configure it to install the Enterprise Edition as well. It is currently setup to deploy an ICP master node (also serves as the boot, proxy, and management node) and a user-configurable number of ICP worker nodes. This module serves as a simple way to provision an ICP cluster within your infrastructure.
 
-You can also install [IBM Multicloud Manager](#configure-ibm-multicloud-manager-on-ibm-cloud-private-version-320-and-above) and [IBM Cloud Automation Manager](#configure-ibm-cloud-automation-manager) on the cluster by specifying additional input variables.
+You can optionally install [IBM Multicloud Manager](#configure-ibm-multicloud-manager-on-ibm-cloud-private-version-320-and-above) and [IBM Cloud Automation Manager](#configure-ibm-cloud-automation-manager) on the cluster by specifying additional input variables.
 
 For provisioning on OpenStack environment please look at [Deploy in Openstack using Terraform](deploy-openstack-terraform.md)
 
@@ -40,7 +40,6 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 
 ## Inputs
 ### Configure the OpenStack Provider
-
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |openstack_user_name|my_user_name|string|The user name used to connect to OpenStack|
@@ -50,7 +49,6 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |openstack_auth_url|https://<HOSTNAME>:5000/v3/|string|The endpoint URL used to connect to OpenStack|
 
 ### Configure the Instances
-
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |instance_prefix|icp|string|Prefix to use in instance names|
@@ -63,9 +61,7 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |openstack_network_name|my_network_name|string|The name of the network to be used for deploy operations|
 |openstack_ssh_key_file|<path to the private SSH key file>|string|The path to the private SSH key file. Appending '.pub' indicates the public key filename|
 
-
 ### Configure IBM Cloud Private
-
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |icp_install_user|ubuntu|string|The user with sudo access across nodes (users section of cloud-init)|
@@ -79,15 +75,12 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |icp_configuration|{}|map|Map of configuration values for ICP|
 |docker_download_location||string|HTTP wget location for ICP provided Docker package|
 
-
 ### Configure IBM Multicloud Manager on IBM Cloud Private Version 3.2.0 and above
-
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |mcm_install|false|string|Set value to "true" if you need to install MCM 3.2.0 and above|
 
 ### Configure IBM Multicloud Manager on IBM Cloud Private Version 3.1.2 and below
-
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |mcm_download_location||string|HTTP wget location for MCM tarball|
@@ -95,7 +88,6 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |mcm_download_password|-|string|Optional password if authentication required for MCM tarball|
 
 ### Configure IBM Multicloud Manager Klusterlet on the managed-cluster
-
 No need to specify below variables if Hub and Klusterlet are on the same cluster (All-in-one installation).
 
 | Name | Default | Type | Description |
@@ -122,7 +114,6 @@ Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_d
 |cam_download_password|-|string|Optional password if authentication required for CAM tarball|
 
 ### Configure SMT level for master node
-
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |smt_value_master||string|Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8|
