@@ -1,7 +1,7 @@
 # Summary
 This Terraform module will perform a simple IBM Cloud Private (ICP) deployment. By default, it will install the Community Edition, but you can also configure it to install the Enterprise Edition as well. It is currently setup to deploy an ICP master node (also serves as the boot, proxy, and management node) and a user-configurable number of ICP worker nodes. This module serves as a simple way to provision an ICP cluster within your infrastructure.
 
-You can also install [IBM Multicloud Manager](#mcm) and [IBM Cloud Automation Manager](#cam) on the cluster by specifying additional input variables.
+You can also install [IBM Multicloud Manager](#configure-ibm-multicloud-manager-on-ibm-cloud-private-version-320-and-above) and [IBM Cloud Automation Manager](#configure-ibm-cloud-automation-manager) on the cluster by specifying additional input variables.
 
 For provisioning on OpenStack environment please look at [Deploy in Openstack using Terraform](deploy-openstack-terraform.md)
 
@@ -38,7 +38,7 @@ Ensure that the base image used for deployment have necessary repositories confi
 
 See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for next steps.
 
-## [Inputs](#inputs)
+## Inputs
 ### Configure the OpenStack Provider
 
 | Name | Default | Type | Description |
@@ -80,13 +80,13 @@ See [Accessing IBM Cloud Private](/README.md#accessing-ibm-cloud-private) for ne
 |docker_download_location||string|HTTP wget location for ICP provided Docker package|
 
 
-### [Configure IBM Multicloud Manager on IBM Cloud Private Version 3.2.0 and above](#mcm)
+### Configure IBM Multicloud Manager on IBM Cloud Private Version 3.2.0 and above
 
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
 |mcm_install|false|string|Set value to "true" if you need to install MCM 3.2.0 and above|
 
-### [Configure IBM Multicloud Manager on IBM Cloud Private Version 3.1.2 and below](#mcm_old)
+### Configure IBM Multicloud Manager on IBM Cloud Private Version 3.1.2 and below
 
 | Name | Default | Type | Description |
 |--------------------|---------------|--------|----------------------------------------|
@@ -107,7 +107,7 @@ No need to specify below variables if Hub and Klusterlet are on the same cluster
 |mcm_hub_server_token||string|If mcm_klusterlet_only is true then Hub cluster Token|
 
 
-### [Configure IBM Cloud Automation Manager](#cam)
+### Configure IBM Cloud Automation Manager
 This is an optional component to install on top of ICP.
 Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_download_location* is provided for *Offline Installation* in input variables. *cam_docker_user* should be empty string for *Offline Installation*.
 
@@ -127,7 +127,7 @@ Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_d
 |--------------------|---------------|--------|----------------------------------------|
 |smt_value_master||string|Number of threads per core. Value can be any of: on, off, 1, 2, 4, 8|
 
-## [How-To](#how-to)
+## How-To
 * **Pass the variables**: There are multiple ways to pass input variables to Terraform module. See [docs](https://www.terraform.io/docs/configuration/variables.html#assigning-values-to-root-module-variables) for more information.
 * **Re-install MCM on the cluster**:
 <br/>`terraform destroy -target=null_resource.mcm_install`
@@ -140,5 +140,5 @@ Will enable if *cam_docker_user* is provided for *Online Installation* OR *cam_d
 <br/>`terraform taint -module=cam_install null_resource.cam_install`
 <br/>`terraform destroy`
 
-## [Authors](#authors)
+## Authors
 Yussuf Shaikh yussuf@us.ibm.com
