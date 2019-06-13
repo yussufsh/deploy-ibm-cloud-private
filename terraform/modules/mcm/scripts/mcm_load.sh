@@ -63,6 +63,10 @@ function load_ppa_archive {
 
     cloudctl catalog load-ppa-archive -a ${mcm_file} \
         --registry ${cluster_name}.icp:8500/kube-system
+    if [[ $? -gt 0 ]]; then
+        /bin/echo "MCM Loading failed" >&2
+        exit 1
+    fi
 }
 
 # Add helm chart

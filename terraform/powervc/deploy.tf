@@ -85,6 +85,7 @@ module "mcm_install" {
     icp_version             = "${var.icp_version}"
     icp_admin_user          = "admin"
     icp_admin_user_password = "${module.icpprovision.default_admin_password}"
+    mcm_install             = "${var.mcm_install}"
     klusterlet_only         = "${var.mcm_klusterlet_only}"
     klusterlet_name         = "${var.mcm_klusterlet_name}"
     namespace               = "${var.mcm_namespace}"
