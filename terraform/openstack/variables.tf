@@ -189,6 +189,16 @@ variable "docker_download_location" {
 ################################################################
 # Configure MCM details
 ################################################################
+# MCM 3.2.0 and above
+################################################################
+variable "mcm_install" {
+    description = "Set value to true if you need to install MCM 3.2.0 and above"
+    default = "false"
+}
+
+################################################################
+# MCM 3.1.2 and below
+################################################################
 variable "mcm_download_location" {
     description = "HTTP wget location for MCM tarball"
     default = ""
@@ -204,6 +214,9 @@ variable "mcm_download_password" {
     default = "-"
 }
 
+################################################################
+# MCM Klusterlet only variables
+################################################################
 variable "mcm_klusterlet_only" {
     description = "true if need to install Klusterlet without the Hub cluster(remote)"
     default = "false"

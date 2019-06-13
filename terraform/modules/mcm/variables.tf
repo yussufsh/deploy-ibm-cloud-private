@@ -89,3 +89,7 @@ variable "mcm_download_user" {
 variable "mcm_download_password" {
     default = "-"
 }
+
+variable "mcm_install" {
+    default = "false"
+}
