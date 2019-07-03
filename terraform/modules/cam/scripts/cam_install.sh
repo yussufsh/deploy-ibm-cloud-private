@@ -76,15 +76,16 @@ function add_ibm_chart_repos {
 
 # Install and configure exportfs; Create Persistent Volumes
 function create_persistent_volumes {
-    sudo mkdir -p /cam_export/
-    sudo sed -i '/\/cam_export*/d' /etc/exports
-    echo "/cam_export *(rw,insecure,no_subtree_check,async,no_root_squash)" | sudo tee -a /etc/exports &> /dev/null
+    export_dir=/cam_export
+    sudo mkdir -p ${export_dir}
+    sudo sed -i '/\${export_dir}*/d' /etc/exports
+    echo "${export_dir} *(rw,insecure,no_subtree_check,async,no_root_squash)" | sudo tee -a /etc/exports &> /dev/null
     pvs=( cam-mongo cam-logs cam-terraform cam-bpd-appdata )
     sizes=( 15 10 15 20 )
     dir_names=( db logs terraform BPD_appdata )
     for ((i = 0; i < ${#pvs[@]}; ++i)); do
         item=${pvs[${i}]}
-        export_dir_name=/cam_export/CAM_${dir_names[${i}]}
+        export_dir_name=${export_dir}/CAM_${dir_names[${i}]}
         sudo tee /tmp/${item}-pv.yaml &> /dev/null <<EOL
 kind: PersistentVolume
 apiVersion: v1
@@ -104,10 +105,18 @@ EOL
         sudo chmod -R 755 /tmp/${item}-pv.yaml
         kubectl create -f /tmp/${item}-pv.yaml
         sudo mkdir -p ${export_dir_name}
-        sudo chmod -R 755 ${export_dir_name}
         echo "${export_dir_name} *(rw,nohide,insecure,no_subtree_check,async,no_root_squash)" | sudo tee -a /etc/exports &> /dev/null
     done
-    sudo chmod -R 755 /cam_export
+    sudo chmod -R 755 ${export_dir}
+    # Prereq to set specific permissions
+    sudo mkdir -p ${export_dir}/CAM_terraform/cam-provider-terraform \
+        ${export_dir}/CAM_logs/cam-provider-terraform \
+        ${export_dir}/CAM_BPD_appdata/mysql \
+        ${export_dir}/CAM_BPD_appdata/repositories \
+        ${export_dir}/CAM_BPD_appdata/workspace
+    sudo chown -R root:1000 ${export_dir}/CAM_logs ${export_dir}/CAM_BPD_appdata
+    sudo chown -R root:1111 ${export_dir}/CAM_terraform ${export_dir}/CAM_logs/cam-provider-terraform
+    sudo chown -R 999:999 ${export_dir}/CAM_BPD_appdata/mysql ${export_dir}/CAM_db
     sudo exportfs -a
 }
 
